@@ -1,0 +1,40 @@
+name: Voice image build
+
+# The full image (PyTorch CPU + Whisper + Coqui TTS) is slow to build, so it runs on demand, weekly,
+# and whenever the voice dependencies change - catching dependency conflicts before a release.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - backend/requirements*.txt
+      - backend/Dockerfile
+      - backend/voice/**
+
+permissions:
+  contents: read
+
+jobs:
+  build-voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - name: Build with INSTALL_VOICE=true
+        run: docker build --build-arg INSTALL_VOICE=true -f backend/Dockerfile -t suraksha-ai-backend:voice .
+      - name: Import check (Whisper, Coqui TTS, Tesseract, ffmpeg)
+        run: |
+          docker run --rm --entrypoint python suraksha-ai-backend:voice -c "import whisper, TTS, torch; print('torch', torch.__version__)"
+          docker run --rm --entrypoint tesseract suraksha-ai-backend:voice --list-langs
+          docker run --rm --entrypoint ffmpeg suraksha-ai-backend:voice -version
+      - name: Whisper transcribes a generated clip
+        run: |
+          docker run --rm --entrypoint sh suraksha-ai-backend:voice -c "
+            ffmpeg -loglevel error -f lavfi -i 'sine=frequency=440:duration=2' /tmp/t.wav &&
+            python -c \"import whisper; m=whisper.load_model('tiny'); print(m.transcribe('/tmp/t.wav', fp16=False)['language'])\""
+      - name: Image size
+        run: docker image ls suraksha-ai-backend:voice

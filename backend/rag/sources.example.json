@@ -1,0 +1,23 @@
+{
+  "_comment": "Example format. Replace each url with the exact official PDF / page you want indexed - pick current documents from the regulator websites (e.g. SEBI investor-awareness booklets, RBI 'BE(A)WARE' fraud booklet, NCFE financial-literacy material, I4C cyber-hygiene guides).",
+  "documents": [
+    {
+      "url": "https://investor.sebi.gov.in/",
+      "title": "SEBI Investor Website",
+      "source": "Securities and Exchange Board of India",
+      "topic": "scam_detection"
+    },
+    {
+      "url": "https://sachet.rbi.org.in/",
+      "title": "RBI Sachet - unauthorised deposit schemes",
+      "source": "Reserve Bank of India",
+      "topic": "scam_detection"
+    },
+    {
+      "url": "https://cybercrime.gov.in/",
+      "title": "National Cyber Crime Reporting Portal",
+      "source": "Indian Cyber Crime Coordination Centre (MHA)",
+      "topic": "cyber_safety"
+    }
+  ]
+}

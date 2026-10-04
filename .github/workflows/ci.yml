@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-test:
+    name: Lint, tests & detection quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r backend/requirements-dev.txt
+      - name: Ruff lint
+        run: ruff check backend tests scripts
+      - name: Ruff format
+        run: ruff format --check backend tests scripts
+      - name: Unit & API tests (includes risk-engine quality gate)
+        run: pytest -q
+      - name: Risk engine evaluation report
+        run: |
+          PYTHONPATH=. python scripts/evaluate_risk.py --json > risk-report.json
+          PYTHONPATH=. python scripts/evaluate_risk.py --fail-under-f1 0.95
+        env:
+          DATABASE_URL: sqlite://
+      - uses: actions/upload-artifact@v4
+        with:
+          name: risk-report
+          path: risk-report.json
+
+  migrations:
+    name: Migrations on PostgreSQL 16
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: suraksha
+          POSTGRES_PASSWORD: suraksha
+          POSTGRES_DB: suraksha
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U suraksha" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://suraksha:suraksha@localhost:5432/suraksha
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r backend/requirements.txt
+      - name: Upgrade, downgrade, upgrade, drift check
+        run: |
+          alembic -c backend/alembic.ini upgrade head
+          alembic -c backend/alembic.ini downgrade base
+          alembic -c backend/alembic.ini upgrade head
+          alembic -c backend/alembic.ini check
+
+  docker:
+    name: Docker image & stack smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [lint-test]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose files
+        run: |
+          docker compose config -q
+          docker compose --profile monitoring --profile https config -q
+      - name: Build API image (without voice extras, for speed)
+        run: docker build --build-arg INSTALL_VOICE=false -f backend/Dockerfile -t suraksha-ai-backend:latest .
+      - name: Build web app image
+        run: docker build -t suraksha-ai-frontend:latest frontend
+      - name: Start stack (LLM disabled - Ollama models are too large for CI)
+        env:
+          LLM_ENABLED: "false"
+          BOOTSTRAP_ADMIN_EMAIL: admin@example.com
+          BOOTSTRAP_ADMIN_PASSWORD: ChangeMe123
+        run: |
+          printf 'LLM_ENABLED=false\nBOOTSTRAP_ADMIN_EMAIL=admin@example.com\nBOOTSTRAP_ADMIN_PASSWORD=ChangeMe123\n' > .env
+          docker compose up -d postgres redis chromadb mailpit
+          docker compose up -d --no-deps --no-build backend worker frontend
+          for i in $(seq 1 60); do
+            curl -fs localhost:8000/health && break
+            sleep 3
+          done
+          curl -fs localhost:8000/health/ready
+      - name: Smoke test
+        run: python3 scripts/smoke_test.py http://localhost:8000
+      - name: Web app reachable and API proxied
+        run: |
+          curl -fs localhost:3000/ | grep -q "<x-dc>"
+          curl -fs localhost:3000/api/health
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:3000/api/metrics)" = "404"
+      - name: Browser end-to-end test (Playwright)
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+          SCREENSHOT_DIR=e2e-screenshots python tests/e2e/ui_flow.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screenshots
+          path: e2e-screenshots
+          if-no-files-found: ignore
+      - name: Verification email delivered to Mailpit
+        run: |
+          sleep 5
+          curl -fs localhost:8025/api/v1/messages | python3 -c "import json,sys; m=json.load(sys.stdin); assert m['total']>0, m; print(m['total'],'emails')"
+      - name: Backup round-trip
+        run: |
+          docker compose run --rm db-backup sh /scripts/backup.sh --once
+          ls -l backups/
+          dump=$(ls backups/suraksha-db-*.dump | head -1)
+          docker compose run --rm db-backup sh /scripts/restore_db.sh "/backups/$(basename "$dump")"
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail=200
+
+  dependency-audit:
+    name: Dependency vulnerability audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true  # advisory: new CVEs should not block unrelated changes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pip-audit
+      - run: pip-audit -r backend/requirements.txt

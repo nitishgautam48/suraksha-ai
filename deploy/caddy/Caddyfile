@@ -1,0 +1,29 @@
+# HTTPS reverse proxy (profile "https"). Caddy obtains and renews Let's Encrypt certificates
+# automatically for a public DOMAIN; for DOMAIN=localhost it uses its own local CA.
+{
+	email {$ACME_EMAIL:admin@example.com}
+}
+
+{$DOMAIN:localhost} {
+	encode zstd gzip
+
+	# Internal-only endpoints are never exposed publicly.
+	@internal path /metrics /metrics/* /api/metrics
+	respond @internal 404
+
+	request_body {
+		max_size 30MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		-Server
+	}
+
+	# The web app container serves the UI and proxies /api/* to the backend.
+	reverse_proxy frontend:80 {
+		transport http {
+			read_timeout 300s
+		}
+	}
+}

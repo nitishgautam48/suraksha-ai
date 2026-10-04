@@ -1,0 +1,44 @@
+groups:
+  - name: suraksha
+    rules:
+      - alert: SurakshaApiDown
+        expr: up{job="suraksha-api"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: Suraksha AI API is not responding to Prometheus scrapes
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(suraksha_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(suraksha_http_requests_total[5m])), 0.001) > 0.05
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: More than 5% of API requests are failing with 5xx
+
+      - alert: LLMFailing
+        expr: |
+          sum(rate(suraksha_llm_requests_total{outcome="error"}[10m]))
+            / clamp_min(sum(rate(suraksha_llm_requests_total[10m])), 0.001) > 0.2
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: Over 20% of Ollama calls fail - analysis is running on rules only
+
+      - alert: SlowAnalysis
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(suraksha_http_request_duration_seconds_bucket{route=~"/analyze/.*|/scan/.*"}[10m]))) > 60
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: p95 analysis latency above 60s - consider a GPU or smaller models
+
+      - alert: RagNotGrounding
+        expr: |
+          sum(rate(suraksha_rag_retrievals_total{outcome="hit"}[30m]))
+            / clamp_min(sum(rate(suraksha_rag_retrievals_total[30m])), 0.001) < 0.3
+        for: 30m
+        labels: {severity: info}
+        annotations:
+          summary: Most chat questions find no knowledge-base context - check ingestion

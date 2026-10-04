@@ -1,0 +1,289 @@
+# Suraksha AI - full local stack. Start everything with:  docker compose up -d
+# First start downloads ~11 GB of Ollama models in the background (ollama-init); the API is usable
+# immediately and falls back to the rule-based engine until the models are ready.
+#
+# Optional profiles:
+#   docker compose --profile monitoring up -d   # + Prometheus (127.0.0.1:9090) and Grafana (127.0.0.1:3001)
+#   docker compose --profile https up -d        # + Caddy reverse proxy with automatic HTTPS for $DOMAIN
+#   docker compose --profile offsite up -d      # + hourly copy of ./backups to S3 / B2 / Drive / SFTP (rclone)
+name: suraksha-ai
+
+x-backend-env: &backend-env
+  ENVIRONMENT: ${ENVIRONMENT:-development}
+  SECRET_KEY: ${SECRET_KEY:-change-me-in-production-use-openssl-rand-hex-32}
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-suraksha}:${POSTGRES_PASSWORD:-suraksha}@postgres:5432/${POSTGRES_DB:-suraksha}
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/1
+  CELERY_RESULT_BACKEND: redis://redis:6379/2
+  OLLAMA_BASE_URL: http://ollama:11434
+  CHROMA_HOST: chromadb
+  CHROMA_PORT: "8000"
+  UPLOAD_DIR: /data/uploads
+  KNOWLEDGE_UPLOAD_DIR: /data/knowledge
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMS_PROVIDER: ${SMS_PROVIDER:-email_bridge}  # dev default: OTP / alert SMS appear in Mailpit
+  FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-suraksha}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-suraksha}
+      POSTGRES_DB: ${POSTGRES_DB:-suraksha}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ollama:
+    image: ollama/ollama:0.35.0
+    restart: unless-stopped
+    environment:
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-10m}
+      # Defaults fit an 8 GB GPU / 16 GB RAM machine: one LLM + the small embedding model loaded
+      # together (Ollama unloads llama3.1 to make room when gemma2 is needed, and vice versa),
+      # one request at a time, flash attention and an 8-bit KV cache (half the memory of f16).
+      # On a 16 GB+ GPU you can raise MAX_LOADED_MODELS to 3 and NUM_PARALLEL to 2.
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-1}
+      OLLAMA_MAX_LOADED_MODELS: ${OLLAMA_MAX_LOADED_MODELS:-2}
+      OLLAMA_FLASH_ATTENTION: ${OLLAMA_FLASH_ATTENTION:-1}
+      OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:-q8_0}
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "${OLLAMA_BIND:-127.0.0.1}:${OLLAMA_PORT:-11434}:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  # One-shot job that downloads the models into the shared ollama volume.
+  ollama-init:
+    image: ollama/ollama:0.35.0
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODELS: ${OLLAMA_PULL_MODELS:-nomic-embed-text llama3.1:8b gemma2:9b}
+    volumes:
+      - ./scripts/pull_models.sh:/pull_models.sh:ro
+    entrypoint: ["/bin/sh", "/pull_models.sh"]
+    restart: on-failure:10
+
+  chromadb:
+    image: chromadb/chroma:1.5.9
+    restart: unless-stopped
+    environment:
+      ANONYMIZED_TELEMETRY: "False"
+    volumes:
+      - chroma:/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8000 && printf 'GET /api/v2/heartbeat HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q nanosecond <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: &backend-build
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        INSTALL_VOICE: ${INSTALL_VOICE:-true}
+    image: suraksha-ai-backend:latest
+    init: true
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *backend-env
+    ports:
+      # With the https profile set API_BIND=127.0.0.1 so traffic only reaches the API through Caddy.
+      - "${API_BIND:-0.0.0.0}:${API_PORT:-8000}:8000"
+    volumes:
+      - uploads:/data/uploads
+      - knowledge:/data/knowledge
+      - models:/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+
+  worker:
+    build: *backend-build
+    image: suraksha-ai-backend:latest
+    init: true
+    restart: unless-stopped
+    command: ["/app/scripts/start_worker.sh"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *backend-env
+    volumes:
+      - uploads:/data/uploads
+      - knowledge:/data/knowledge
+      - models:/models
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A backend.workers.celery_app inspect ping -d celery@$$HOSTNAME --timeout 10 || exit 1"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Web app (the Suraksha AI prototype wired to the API). Open http://localhost:3000
+  frontend:
+    build: ./frontend
+    image: suraksha-ai-frontend:latest
+    restart: unless-stopped
+    environment:
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    ports:
+      - "${FRONTEND_BIND:-0.0.0.0}:${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_started
+
+  # Local SMTP catcher so verification / password-reset emails work out of the box.
+  # Read them at http://localhost:8025. For real delivery set SMTP_HOST/SMTP_PORT/... in .env.
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    ports:
+      - "${MAILPIT_BIND:-127.0.0.1}:8025:8025"
+
+  # Daily PostgreSQL dump + archive of uploads/knowledge documents into ./backups (retention 7 days).
+  db-backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    # One-off runs:  docker compose run --rm db-backup sh /scripts/backup.sh --once
+    #                docker compose run --rm db-backup sh /scripts/restore_db.sh /backups/<file>.dump
+    command: ["sh", "/scripts/backup.sh"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-suraksha}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-suraksha}
+      POSTGRES_DB: ${POSTGRES_DB:-suraksha}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+      BACKUP_INITIAL_DELAY_SECONDS: ${BACKUP_INITIAL_DELAY_SECONDS:-900}
+    volumes:
+      - ./scripts:/scripts:ro
+      - ${BACKUP_PATH:-./backups}:/backups
+      - uploads:/data/uploads:ro
+      - knowledge:/data/knowledge:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ---- profile: offsite --------------------------------------------------------------------
+  # Copies ./backups to off-machine storage hourly. Configure BACKUP_REMOTE + RCLONE_CONFIG_* in .env.
+  backup-offsite:
+    image: rclone/rclone:1.71
+    profiles: ["offsite"]
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/scripts/offsite_sync.sh"]
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./scripts:/scripts:ro
+      - ${BACKUP_PATH:-./backups}:/backups:ro
+
+  # ---- profile: monitoring ------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}
+    volumes:
+      - ./deploy/prometheus:/etc/prometheus:ro
+      - promdata:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:13.2.3
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      - prometheus
+
+  # ---- profile: https -----------------------------------------------------------------------
+  caddy:
+    image: caddy:2.10-alpine
+    profiles: ["https"]
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_started
+
+volumes:
+  pgdata:
+  redisdata:
+  ollama:
+  chroma:
+  uploads:
+  knowledge:
+  models:
+  promdata:
+  grafanadata:
+  caddy_data:
+  caddy_config:

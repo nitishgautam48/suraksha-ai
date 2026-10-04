@@ -1,0 +1,4 @@
+{
+  "_comment": "Official documents to download and index (POST /admin/knowledge/fetch or `python scripts/ingest_knowledge.py --fetch`). Add the exact PDF or page URLs you want; only https and public hosts are fetched. See rag/sources.example.json for the format.",
+  "documents": []
+}

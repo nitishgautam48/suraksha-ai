@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Small (minor/patch) dependency updates, grouped into one weekly PR. Major upgrades are skipped:
+  # they need a manual review (e.g. transformers 5 breaks coqui-tts, redis-py 8 changes APIs).
+  - package-ecosystem: pip
+    directory: /backend
+    schedule: {interval: weekly}
+    open-pull-requests-limit: 3
+    groups:
+      python-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: docker
+    directory: /backend
+    schedule: {interval: monthly}
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: {interval: monthly}
+    groups:
+      actions:
+        patterns: ["*"]

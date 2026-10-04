@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: suraksha
+    folder: Suraksha AI
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards
