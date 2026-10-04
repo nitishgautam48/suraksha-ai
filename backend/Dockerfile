@@ -26,8 +26,9 @@ COPY backend/requirements.txt backend/requirements-voice.txt /tmp/
 RUN pip install -r /tmp/requirements.txt
 
 # Local speech models: CPU-only PyTorch keeps the image several GB smaller than the CUDA build.
+# Pinned to 2.8: from PyTorch 2.9 Coqui TTS also needs torchcodec for audio IO.
 RUN if [ "$INSTALL_VOICE" = "true" ]; then \
-        pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu \
+        pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cpu \
         && pip install -r /tmp/requirements-voice.txt ; \
     else echo "Skipping voice dependencies"; fi
 
