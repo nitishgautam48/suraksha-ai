@@ -6,4 +6,4 @@ torchaudio==2.8.0
 openai-whisper==20250625
 coqui-tts==0.27.5
 # coqui-tts 0.27.x needs transformers >= 4.57 but breaks on 5.x (isin_mps_friendly was removed).
-transformers>=4.57,<5
+transformers>=5.18.0,<6
