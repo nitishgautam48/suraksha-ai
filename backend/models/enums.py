@@ -37,6 +37,7 @@ class SourceType(StrEnum):
     TEXT = "text"
     MESSAGE = "message"
     SOCIAL = "social"
+    LINK = "link"
     IMAGE = "image"
     PDF = "pdf"
     VOICE = "voice"

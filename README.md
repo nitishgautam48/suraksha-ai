@@ -245,7 +245,9 @@ phone OTP, refresh, password reset) need
 | POST | `/scan/pdf` | 1 | PDF → text/OCR → analysis |
 | POST | `/scan/text` | 1 | Any pasted text |
 | POST | `/analyze/message` | 2 | WhatsApp message analyzer |
-| POST | `/analyze/social` | 3 | Instagram / Telegram / YouTube analyzer with highlighted sections |
+| POST | `/analyze/message-image` | 2 | Chat screenshot → OCR in memory (never stored) → message analysis |
+| POST | `/analyze/link` | 3 | Link Checker: open an Instagram / YouTube / Telegram / X / web link, fact-check its claims, reasoned verdict |
+| POST | `/analyze/social` | 3 | Paste a caption / transcript instead: highlighted manipulation tactics |
 | GET | `/analyze/history[/{id}]` | 1–3 | Your past analyses |
 | POST | `/analyze/history/{id}/feedback` | 1–3 | "Was this right?", the labelled data used for calibration |
 | GET | `/analyze/history/{id}/report` | Report | Complaint summary (English, for the police portal) + steps for 1930, cybercrime.gov.in, Chakshu, bank, SEBI SCORES |
@@ -260,9 +262,14 @@ phone OTP, refresh, password reset) need
 | POST | `/learning/lessons/{id}/complete` | 6 | Mark a lesson complete (`GET` lesson takes `?language=` for a translated copy) |
 | POST | `/learning/questions/{id}/check` | 6 | Check one quiz answer instantly (practice mode, XP on first correct) |
 | GET | `/learning/courses/{id}/flashcards` | 6 | Flash cards |
+| POST | `/learning/courses/{id}/flashcards/practised` | 6 | The user flipped cards today (learning streak, XP once a day) |
 | GET/POST | `/learning/courses/{id}/assessment[/submit]` | 6 | Quiz (answers hidden) and grading |
 | POST | `/learning/generate` | 6 | gemma2 lesson / flash cards / quiz / simplification grounded by RAG |
-| GET | `/habits` | 4 | Streak, awareness, emergency-fund checklist, savings discipline, nudges |
+| GET | `/habits` | 4 | Safety Score (300-900), today's goals, Scam Drill, Safety Shield, weekly challenge, streaks, emergency fund, nudges |
+| GET | `/habits/drill` | 4 | Today's 3 drill messages |
+| POST | `/habits/drill/answer` | 4 | Answer `scam` / `genuine`; explanation, highlighted words, XP |
+| PUT | `/habits/shield/{key}` | 4 | Mark a Safety Shield step done |
+| POST | `/habits/weekly-challenge` | 4 | Complete this week's challenge (+40 XP) |
 | PUT | `/habits/checklist/{key}` | 4 | Tick an emergency-fund checklist item |
 | POST | `/habits/savings-checkin` | 4 | Weekly yes/no savings check-in (no amounts) |
 | PUT | `/habits/emergency-fund` | 4 | Emergency-fund goal + saved so far (the user's own numbers, never advice) |
@@ -329,11 +336,56 @@ Sample `/analyze/message` response (abridged):
 
 ## Modules
 
-* **Habit coach (4):** learning streak (consecutive days with a lesson, quiz or flash cards),
-  scam-awareness progress (completion of the scam, UPI and cyber courses blended with quiz scores),
-  a seven-step emergency-fund checklist, and weekly savings-discipline check-ins. Nudges are
-  rule-based, with an optional gemma2 nudge (`?ai_nudge=true`) that passes through the output
-  guardrail. A daily Celery beat job posts a nudge alert.
+* **Link Checker (3):** `POST /analyze/link` takes a link to an Instagram reel or post, a YouTube
+  video or short, a Telegram channel or post, an X post, a WhatsApp chat or group invite, or any web
+  page. The server opens it (`backend/ai/link_fetcher.py`) and reads the title, author, caption or
+  description, the spoken words (YouTube subtitles, or a local Whisper transcript of short videos in
+  the voice build) and the page text. It never logs in: when a platform hides a post behind a login,
+  the result says so and suggests pasting the caption or a screenshot. Every request is SSRF-guarded:
+  http(s) on ports 80/443 only, private / loopback / link-local addresses refused at every redirect,
+  12 s timeout, 2 MB cap. Deterministic fact checks (`backend/ai/link_checks.py`) then test the claims:
+  promised returns are compounded to a yearly figure ("3% daily" is about 48 lakh % a year), "turned
+  10k into 5 lakh in 2 weeks" stories are checked the same way, SEBI-registration claims without an
+  INA / INH number fail, trading calls without registration are flagged, payment to a personal UPI ID
+  fails (a SEBI `@valid` handle passes), private WhatsApp / Telegram funnels and celebrity
+  endorsements are flagged, and shortened links are followed to their real destination. The local LLM
+  gets these checks as facts and returns a verdict, the claims it found with an assessment (false,
+  misleading, unverifiable, plausible), red flags with quoted evidence, genuine signals and next steps.
+  As everywhere, the AI can raise the rules score but never lower it, and advice sentences are removed.
+  `yt-dlp` (metadata and subtitles, no download) is used for YouTube, Instagram and X when available.
+  The caption / transcript analyzer is still available as "Paste text instead".
+* **Message scanner without copy-paste (2):** one-tap *Paste & scan* (clipboard), pasting or dropping
+  a screenshot straight into the box, *Screenshot* upload (`POST /analyze/message-image`: OCR in
+  memory, the image is never stored), and *Speak it* (browser speech recognition). A pasted link is
+  sent to the Link Checker automatically.
+* **Safety Habits (4):** the habit tracker is built around what the user actually does, not
+  self-ticked boxes (`backend/services/safety_service.py`):
+  * **Suraksha Safety Score, 300 to 900** (read like a credit score): Safety Shield 30%, scam-spotting
+    skill 20% (30-day drill accuracy, scaled by practice), daily consistency 15%, scam awareness 15%,
+    checks before trusting 10% (scans in the last 30 days) and family & money readiness 10%
+    (trusted contact, Family Readiness, emergency fund). Bands: At risk, Building up, Good,
+    Excellent. A weekly history shows "+24 since last week", and "Raise your score" lists the actions
+    worth the most points.
+  * **Daily Scam Drill:** three real-style Indian messages a day (`backend/seed/drills.json`, 36
+    scams and genuine bank / government messages), always at least one scam and one genuine.
+    Answer *Scam* or *Genuine* and see why, with the suspicious words highlighted by the rules
+    engine. 10 XP per correct answer, +25 for finishing; drill streak and 30-day accuracy.
+  * **Safety Shield:** ten one-time protection steps with how-to and official links: OTP pledge,
+    WhatsApp two-step verification, UPI daily limit, Sanchar Saathi number check, Aadhaar biometric
+    lock, transaction alerts, email 2-step verification, removing screen-sharing apps, saving 1930,
+    and a trusted contact (detected automatically).
+  * **Today's goals:** Scam Drill, learn for 2 minutes, check before you trust, with a 7-day view,
+    all tracked automatically. Opening the app no longer counts as practising flash cards; only
+    flipping one does (`POST /learning/courses/{id}/flashcards/practised`).
+  * **Weekly challenge** (+40 XP): one real-world action, e.g. teach a parent that banks never ask
+    for OTPs, or report a spam call on Chakshu.
+  * New badges: Sharp Eye (30 correct drill answers), Drill Streak (7 days), Fully Shielded.
+  * Still included: emergency-fund checklist and goal, weekly savings check-ins, learning streak and
+    rule-based nudges (optional gemma2 nudge with `?ai_nudge=true`, passed through the guardrail).
+* **Senior tools only for seniors:** the Senior-mode switch and the "Elderly Protection" page are
+  shown to users who signed up as senior citizens. Everyone else sees **Family Safety** (trusted
+  contacts, Get Help, scam warnings) to protect their parents and grandparents, and can turn on
+  *Larger text* in Settings.
 * **Voice (5):** Whisper (`WHISPER_MODEL`, default `base`) transcribes all 12 languages. Coqui VITS
   speaks English replies and XTTS-v2 speaks Hindi; other languages need a voice in
   `TTS_CUSTOM_MODELS`, otherwise replies come back as text with `tts_note` explaining why (see

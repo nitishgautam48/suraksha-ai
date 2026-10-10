@@ -157,6 +157,7 @@ class MessageAnalyzeResponse(Disclaimer):
     links: list[LinkInfo]
     phone_numbers: list[str]
     engine: EngineInfo
+    extracted_text: str | None = None  # set when the message came from a screenshot
 
 
 # ---- Module 3: social media analyzer ------------------------------------------------------
@@ -202,6 +203,85 @@ class SocialAnalyzeResponse(Disclaimer):
     tactics: list[TacticCount]
     highlights: list[SocialHighlight]
     segments: list[Segment]
+    explanation: str
+    safe_practices: list[str]
+    links: list[LinkInfo]
+    engine: EngineInfo
+
+
+# ---- Link checker (paste a reel / video / channel / post link) -----------------------------
+class LinkAnalyzeRequest(BaseModel):
+    url: str = Field(min_length=4, max_length=2000, description="Instagram, YouTube, Telegram, X or any web link")
+    language: LanguageCode | None = None
+
+
+class LinkSource(BaseModel):
+    title: str = ""
+    author: str = ""
+    published: str = ""
+    kind: str = "page"
+    platform_name: str = "Website"
+    parts: list[str] = []
+    duration_seconds: int | None = None
+    transcript_source: str | None = None
+    characters: int = 0
+    redirects: list[str] = []
+    extra: dict[str, str] = {}
+
+
+class LinkVerdict(BaseModel):
+    key: Literal["scam", "suspicious", "no_signs", "unclear"]
+    label: str
+    icon: str
+    headline: str
+    summary: str
+
+
+class LinkReason(BaseModel):
+    title: str
+    detail: str = ""
+    evidence: str = ""
+    source: Literal["check", "rules", "ai"]
+
+
+class LinkClaim(BaseModel):
+    claim: str
+    assessment: Literal["false", "misleading", "unverifiable", "plausible"]
+    why: str = ""
+
+
+class LinkCheck(BaseModel):
+    key: str
+    label: str
+    status: Literal["fail", "warn", "pass", "info"]
+    detail: str = ""
+    evidence: str = ""
+    link: str | None = None
+
+
+class LinkAnalyzeResponse(Disclaimer):
+    simple_verdict: SimpleVerdict | None = None
+    confidence: Confidence | None = None
+    privacy: PrivacyInfo | None = None
+    official_guidance: list[OfficialGuidanceItem] = []
+    analysis_id: uuid.UUID
+    url: str
+    final_url: str
+    platform: str
+    source: LinkSource
+    fetched: bool
+    limitations: list[str]
+    verdict: LinkVerdict
+    risk_score: int = Field(ge=0, le=100)
+    risk_level: RiskLevelStr
+    tactics: list[TacticCount]
+    highlights: list[SocialHighlight]
+    segments: list[Segment]
+    reasons: list[LinkReason]
+    claims: list[LinkClaim]
+    checks: list[LinkCheck]
+    genuine_signals: list[str]
+    what_to_do: list[str]
     explanation: str
     safe_practices: list[str]
     links: list[LinkInfo]

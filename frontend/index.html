@@ -28,7 +28,7 @@ if (location.protocol === 'file:') {
 <body>
 <x-dc>
 <helmet>
-<link href="./vendor/fonts.css" rel="stylesheet">
+<link href="./vendor/fonts.css?v=4" rel="stylesheet">
 <style>
 body{margin:0;background:#F8FAFC;font-family:Poppins,'Noto Sans Devanagari',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}
@@ -45,6 +45,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
 @keyframes sk-scan{0%{left:-35%}100%{left:100%}}
 @keyframes sk-dot{0%,80%,100%{opacity:.25}40%{opacity:1}}
 @keyframes sk-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes sk-spin{to{transform:rotate(360deg)}}
 @keyframes sk-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 </style>
 </helmet>
@@ -354,8 +355,8 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
         <button data-nav="{{ n.id }}" onClick="{{ n.onClick }}" style="display:flex;align-items:center;gap:12px;height:46px;padding:0 12px;border:none;border-radius:12px;background:{{ n.bg }};color:{{ n.fg }};font-weight:{{ n.weight }};font-size:15px;cursor:pointer;text-align:left;transition:background .15s" style-hover="background:var(--soft);color:var(--text)"><i style="font-size:22px">{{ n.icon }}</i><span style="flex:1">{{ n.label }}</span><sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}"><span style="min-width:22px;height:22px;padding:0 6px;border-radius:99px;background:var(--r);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center">{{ n.badge }}</span></sc-if></button>
       </sc-for>
       <div style="margin-top:auto;padding:16px;border-radius:16px;background:linear-gradient(135deg,var(--ps),rgba(232,121,249,.12));border:1px solid var(--line);display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;color:var(--pt)"><i style="font-size:20px">elderly</i>Senior mode</span>
-          <button onClick="{{ seniorTog.onClick }}" style="width:48px;height:28px;border-radius:999px;border:none;background:{{ seniorTog.track }};position:relative;cursor:pointer;flex:none;transition:background .2s"><span style="position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transform:{{ seniorTog.knob }};transition:transform .2s"></span></button></div>
+        <sc-if value="{{ isSeniorUser }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;color:var(--pt)"><i style="font-size:20px">elderly</i>Senior mode</span>
+          <button onClick="{{ seniorTog.onClick }}" style="width:48px;height:28px;border-radius:999px;border:none;background:{{ seniorTog.track }};position:relative;cursor:pointer;flex:none;transition:background .2s"><span style="position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transform:{{ seniorTog.knob }};transition:transform .2s"></span></button></div></sc-if>
         <span style="font-size:13px;color:var(--muted);line-height:1.4">Fraud happened? Call <strong style="color:var(--text)">1930</strong> now.</span>
       </div>
     </aside>
@@ -569,12 +570,19 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
 
 <sc-if value="{{ isMsg }}" hint-placeholder-val="{{ false }}">
 <div data-screen-label="Message Scanner" style="display:flex;flex-direction:column;gap:24px">
-  <div><h1 style="margin:0 0 4px;font-size:clamp(26px,3vw,32px);font-weight:800;letter-spacing:-.03em">WhatsApp / SMS Scanner</h1><p style="margin:0;color:var(--muted);font-size:17px">Paste a forwarded message. See how it tries to pull you in, step by step.</p></div>
+  <div><h1 style="margin:0 0 4px;font-size:clamp(26px,3vw,32px);font-weight:800;letter-spacing:-.03em">WhatsApp / SMS Scanner</h1><p style="margin:0;color:var(--muted);font-size:17px">No copy-paste needed: paste in one tap, drop a screenshot, or just say the message. See how it tries to pull you in, step by step.</p></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
     <div style="border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);overflow:hidden;display:flex;flex-direction:column">
-      <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)"><span style="width:40px;height:40px;border-radius:50%;background:var(--soft);display:grid;place-items:center;color:var(--muted)"><i style="font-size:22px">person</i></span><div style="flex:1;line-height:1.3"><strong>Unknown sender</strong><div style="font-size:13px;color:var(--muted)">Paste below · English, Hindi or Hinglish</div></div><span style="font-size:13px;color:var(--muted)">{{ msgChars }} chars</span></div>
-      <div style="padding:18px;background:repeating-linear-gradient(45deg,var(--bg) 0 14px,var(--soft) 14px 15px)">
-        <textarea value="{{ msgText }}" onChange="{{ onMsgText }}" rows="7" placeholder="Paste the WhatsApp or SMS message here…" style="width:100%;border:none;border-radius:4px 16px 16px 16px;background:var(--card);padding:16px;font-size:17px;line-height:1.55;resize:vertical;outline:none;box-shadow:var(--sh)"></textarea>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)"><span style="width:40px;height:40px;border-radius:50%;background:var(--soft);display:grid;place-items:center;color:var(--muted)"><i style="font-size:22px">person</i></span><div style="flex:1;line-height:1.3"><strong>Unknown sender</strong><div style="font-size:13px;color:var(--muted)">English, Hindi or Hinglish · links open in the Link Checker</div></div><span style="font-size:13px;color:var(--muted)">{{ msgChars }} chars</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px 18px;border-bottom:1px solid var(--line)">
+        <button data-testid="msg-paste" onClick="{{ msgPaste }}" style="min-height:56px;padding:6px;border-radius:12px;border:1px solid var(--line);background:var(--ps);color:var(--pt);font-weight:700;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><i style="font-size:22px">content_paste_go</i><span>Paste &amp; scan</span></button>
+        <button data-testid="msg-shot" onClick="{{ msgPickShot }}" style="min-height:56px;padding:6px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><i style="font-size:22px">add_photo_alternate</i><span>Screenshot</span></button>
+        <button data-testid="msg-mic" onClick="{{ msgDictate }}" style="min-height:56px;padding:6px;border-radius:12px;border:1px solid var(--line);background:{{ msgMicBg }};color:{{ msgMicFg }};font-weight:700;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><i style="font-size:22px">{{ msgMicIcon }}</i><span>{{ msgMicLabel }}</span></button>
+        <input ref="{{ msgFileRef }}" data-testid="msg-file" type="file" accept="image/*" onChange="{{ onMsgShot }}" style="display:none">
+      </div>
+      <div onDragOver="{{ msgDragOver }}" onDragLeave="{{ msgDragLeave }}" onDrop="{{ msgDrop }}" style="padding:18px;background:repeating-linear-gradient(45deg,var(--bg) 0 14px,var(--soft) 14px 15px);outline:{{ msgDropOutline }};outline-offset:-6px;border-radius:4px">
+        <sc-if value="{{ msgShotName }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px;font-weight:600;color:var(--gt)"><i style="font-size:18px">image</i><span>{{ msgShotLabel }}</span></div></sc-if>
+        <textarea data-testid="msg-text" value="{{ msgText }}" onChange="{{ onMsgText }}" onPaste="{{ onMsgPaste }}" rows="7" placeholder="Paste the message here, drop a screenshot, or tap Paste &amp; scan…" style="width:100%;border:none;border-radius:4px 16px 16px 16px;background:var(--card);padding:16px;font-size:17px;line-height:1.55;resize:vertical;outline:none;box-shadow:var(--sh)"></textarea>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;padding:16px 18px;border-top:1px solid var(--line)">
         <button onClick="{{ scanMsg }}" style="flex:1;min-width:180px;height:52px;border:none;border-radius:14px;background:var(--p);color:#fff;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px" style-hover="background:var(--p2)"><i style="font-size:22px">document_scanner</i>Scan message</button>
@@ -637,8 +645,116 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
 </div>
 </sc-if>
 <sc-if value="{{ isSocial }}" hint-placeholder-val="{{ false }}">
-<div data-screen-label="Social Media Analyzer" style="display:flex;flex-direction:column;gap:24px">
-  <div><h1 style="margin:0 0 4px;font-size:clamp(26px,3vw,32px);font-weight:800;letter-spacing:-.03em">Social Media Analyzer</h1><p style="margin:0;color:var(--muted);font-size:17px">Paste what a “finfluencer” said. We highlight every manipulation tactic in the text.</p></div>
+<div data-screen-label="Link Checker" style="display:flex;flex-direction:column;gap:24px">
+  <div><h1 style="margin:0 0 4px;font-size:clamp(26px,3vw,32px);font-weight:800;letter-spacing:-.03em">Link Checker</h1><p style="margin:0;color:var(--muted);font-size:17px">Paste a link to an Instagram reel, YouTube video, Telegram channel, X post or any website. Suraksha opens it, reads it, checks its claims and tells you if it is a scam, with its reasons.</p></div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    <sc-for list="{{ socModes }}" as="m" hint-placeholder-count="2"><button data-testid="{{ m.tid }}" onClick="{{ m.onClick }}" style="height:42px;padding:0 16px;border-radius:99px;border:1px solid var(--line);background:{{ m.bg }};color:{{ m.fg }};font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s"><i style="font-size:19px">{{ m.icon }}</i>{{ m.label }}</button></sc-for>
+  </div>
+  <sc-if value="{{ socModeLink }}" hint-placeholder-val="{{ true }}">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="padding:20px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:12px">
+        <label for="link-input" style="font-weight:700;font-size:16px">Link to check</label>
+        <div style="display:flex;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:14px;background:var(--bg);padding:0 6px 0 14px">
+          <i style="font-size:22px;color:{{ linkPlat.c }}">{{ linkPlat.icon }}</i>
+          <input id="link-input" data-testid="link-input" type="url" inputmode="url" autocomplete="off" spellcheck="false" value="{{ linkUrl }}" onChange="{{ onLinkUrl }}" onKeyDown="{{ onLinkKey }}" placeholder="https://www.instagram.com/reel/…" style="flex:1;min-width:0;height:54px;border:none;background:transparent;outline:none;font-size:17px">
+          <button onClick="{{ pasteLink }}" aria-label="Paste link" style="height:42px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px"><i style="font-size:19px">content_paste</i>Paste</button>
+        </div>
+        <div style="font-size:14px;color:var(--muted)">{{ linkPlat.hint }}</div>
+        <button data-testid="link-check" onClick="{{ checkLink }}" style="height:54px;border:none;border-radius:14px;background:var(--p);color:#fff;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px" style-hover="background:var(--p2)"><i style="font-size:22px">travel_explore</i>Check link</button>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <sc-for list="{{ linkPlatforms }}" as="pl" hint-placeholder-count="5"><span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;background:{{ pl.bg }};color:{{ pl.fg }};font-size:13px;font-weight:600"><i style="font-size:16px">{{ pl.icon }}</i>{{ pl.label }}</span></sc-for>
+        </div>
+        <div style="font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:flex-start"><i style="font-size:17px">lock</i><span>We never log in to any account. If a post is private, paste its caption or upload a screenshot instead.</span></div>
+      </div>
+      <sc-if value="{{ linkDone }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:20px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:40px;height:40px;border-radius:12px;background:var(--soft);display:grid;place-items:center;color:{{ linkR.platC }}"><i style="font-size:22px">{{ linkR.platIcon }}</i></span><div style="flex:1;min-width:0;line-height:1.35"><div translate="no" style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ linkR.title }}</div><div style="font-size:13px;color:var(--muted)">{{ linkR.sourceLine }}</div></div><a href="{{ linkR.url }}" target="_blank" rel="noopener noreferrer nofollow" aria-label="Open the link" style="color:var(--muted)"><i style="font-size:20px">open_in_new</i></a></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ linkR.parts }}" as="pt" hint-placeholder-count="2"><span style="padding:4px 10px;border-radius:99px;background:var(--gs);color:var(--gt);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px"><i style="font-size:15px">check</i>{{ pt }}</span></sc-for></div>
+          <div style="font-weight:700">What we read from the link</div>
+          <div translate="no" data-testid="link-content" style="max-height:340px;overflow:auto;font-size:15.5px;line-height:1.75;white-space:pre-wrap;padding:14px;border-radius:12px;background:var(--bg)"><sc-for list="{{ linkSegs }}" as="g" hint-placeholder-count="5"><span title="{{ g.title }}" style="background:{{ g.bg }};color:{{ g.fg }};border-bottom:{{ g.line }};padding:{{ g.pad }};border-radius:4px;font-weight:{{ g.weight }};-webkit-box-decoration-break:clone;box-decoration-break:clone">{{ g.text }}</span></sc-for></div>
+          <span style="font-size:13px;color:var(--muted)">Highlighted words are the tricks we found. Passwords, OTPs and card numbers are hidden before analysis.</span>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <sc-if value="{{ linkIdle }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:24px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:14px">
+          <div style="font-size:18px;font-weight:700">How the Link Checker works</div>
+          <sc-for list="{{ linkHow }}" as="h" hint-placeholder-count="5"><div style="display:flex;gap:12px;align-items:flex-start"><span style="flex:none;width:36px;height:36px;border-radius:10px;background:var(--ps);color:var(--pt);display:grid;place-items:center"><i style="font-size:20px">{{ h.icon }}</i></span><div><div style="font-weight:600">{{ h.t }}</div><div style="font-size:14px;color:var(--muted)">{{ h.d }}</div></div></div></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ linkLoading }}" hint-placeholder-val="{{ false }}">
+        <div data-testid="link-progress" style="padding:24px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:10px;font-weight:700;color:var(--p)"><i style="font-size:22px">auto_awesome</i>Checking the link…</div>
+          <sc-for list="{{ linkSteps }}" as="st" hint-placeholder-count="5"><div style="display:flex;gap:12px;align-items:center;opacity:{{ st.op }}"><i style="font-size:22px;color:{{ st.c }};animation:{{ st.anim }}">{{ st.icon }}</i><span style="font-weight:{{ st.w }}">{{ st.t }}</span></div></sc-for>
+          <span style="font-size:13px;color:var(--muted)">Videos take longer: the AI listens to what is said in them.</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ linkDone }}" hint-placeholder-val="{{ false }}">
+        <div data-testid="link-verdict" style="padding:24px;border-radius:16px;background:{{ linkR.bg }};border:1px solid var(--line);display:flex;flex-direction:column;gap:12px;animation:sk-in .4s ease">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="min-width:0"><div style="font-size:14px;font-weight:600;color:{{ linkR.fg }}">Verdict</div><div style="font-size:clamp(28px,3.2vw,36px);font-weight:800;letter-spacing:-.03em;line-height:1.1;color:{{ linkR.fg }}">{{ linkR.label }}</div></div><span style="flex:none;width:64px;height:64px;border-radius:20px;background:{{ linkR.c }};color:#fff;display:grid;place-items:center"><i style="font-size:36px;font-variation-settings:'FILL' 1">{{ linkR.icon }}</i></span></div>
+          <div translate="no" style="font-size:16.5px;font-weight:600;line-height:1.45">{{ linkR.headline }}</div>
+          <div style="height:10px;border-radius:99px;background:var(--card);overflow:hidden"><div style="height:100%;width:{{ linkR.barW }};background:{{ linkR.c }};border-radius:99px;transition:width 1s"></div></div>
+          <div style="display:flex;justify-content:space-between;gap:8px;font-size:14px;color:{{ linkR.fg }};font-weight:600"><span>Risk score {{ linkR.score }}/100</span><span>{{ linkR.srcLabel }}</span></div>
+          <div translate="no" style="font-size:15px;line-height:1.55">{{ linkR.summary }}</div>
+        </div>
+        <sc-if value="{{ linkR.hasLimits }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px 18px;border-radius:16px;background:var(--as);color:var(--at);display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:10px;align-items:flex-start;font-weight:600"><i style="font-size:22px">info</i><div style="display:flex;flex-direction:column;gap:4px"><sc-for list="{{ linkR.limits }}" as="lm" hint-placeholder-count="1"><span>{{ lm }}</span></sc-for></div></div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px"><button onClick="{{ linkToText }}" style="height:40px;padding:0 14px;border-radius:10px;border:none;background:var(--card);color:var(--text);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px"><i style="font-size:18px">edit_note</i>Paste the caption instead</button><button onClick="{{ goScam }}" style="height:40px;padding:0 14px;border-radius:10px;border:none;background:var(--card);color:var(--text);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px"><i style="font-size:18px">add_photo_alternate</i>Upload a screenshot</button></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ linkR.hasReasons }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:24px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:14px">
+            <div style="font-size:18px;font-weight:700">Why we think so</div>
+            <sc-for list="{{ linkR.reasons }}" as="rs" hint-placeholder-count="3"><div style="display:flex;gap:12px;align-items:flex-start"><i style="font-size:22px;color:var(--r);font-variation-settings:'FILL' 1">error</i><div style="flex:1;display:flex;flex-direction:column;gap:4px"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><span style="font-weight:650">{{ rs.title }}</span><span style="padding:2px 8px;border-radius:99px;background:var(--soft);color:var(--muted);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">{{ rs.src }}</span></div><sc-if value="{{ rs.detail }}" hint-placeholder-val="{{ true }}"><div style="font-size:14px;color:var(--muted);line-height:1.5">{{ rs.detail }}</div></sc-if><sc-if value="{{ rs.evidence }}" hint-placeholder-val="{{ false }}"><span translate="no" style="align-self:flex-start;font-size:14px;padding:6px 10px;border-radius:8px;background:var(--bg);font-style:italic">“{{ rs.evidence }}”</span></sc-if></div></div></sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ linkR.hasChecks }}" hint-placeholder-val="{{ true }}">
+          <div data-testid="link-checks" style="padding:24px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:12px">
+            <div style="font-size:18px;font-weight:700">Automatic fact checks</div>
+            <sc-for list="{{ linkR.checks }}" as="ck" hint-placeholder-count="3"><div style="display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;background:{{ ck.bg }}"><i style="font-size:22px;color:{{ ck.c }};font-variation-settings:'FILL' 1">{{ ck.icon }}</i><div style="flex:1;display:flex;flex-direction:column;gap:4px"><span style="font-weight:650;color:{{ ck.fg }}">{{ ck.label }}</span><span style="font-size:14px;line-height:1.5">{{ ck.detail }}</span><sc-if value="{{ ck.link }}" hint-placeholder-val="{{ false }}"><a href="{{ ck.link }}" target="_blank" rel="noopener noreferrer" style="align-self:flex-start;font-size:13.5px;font-weight:600;color:var(--pt);display:inline-flex;align-items:center;gap:4px;text-decoration:none">Verify on the official site<i style="font-size:15px">open_in_new</i></a></sc-if></div></div></sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ linkR.hasClaims }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:24px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:12px">
+            <div style="font-size:18px;font-weight:700">Claims made in the post</div>
+            <sc-for list="{{ linkR.claims }}" as="cl" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span translate="no" style="font-weight:600">“{{ cl.claim }}”</span><span style="flex:none;padding:3px 10px;border-radius:99px;background:{{ cl.bg }};color:{{ cl.fg }};font-size:12.5px;font-weight:700">{{ cl.tag }}</span></div><span translate="no" style="font-size:14px;color:var(--muted);line-height:1.5">{{ cl.why }}</span></div></sc-for>
+          </div>
+        </sc-if>
+        <div style="padding:24px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:10px"><div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:18px"><i style="font-size:22px;color:var(--p)">psychology</i>AI reasoning</div><p translate="no" data-testid="link-explanation" style="margin:0;font-size:16px;line-height:1.65;white-space:pre-wrap">{{ linkR.explanation }}</p><span style="font-size:13px;color:var(--muted)">Safety warnings only, never investment advice.</span></div>
+        <sc-if value="{{ linkR.hasGenuine }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:20px 24px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:10px"><div style="font-weight:700">What looks genuine</div><sc-for list="{{ linkR.genuine }}" as="gn" hint-placeholder-count="1"><div style="display:flex;gap:10px;align-items:flex-start"><i style="font-size:20px;color:var(--g)">thumb_up</i><span translate="no">{{ gn }}</span></div></sc-for></div>
+        </sc-if>
+        <div style="padding:24px;border-radius:16px;background:var(--gs);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;color:var(--gt)"><i style="font-size:24px;font-variation-settings:'FILL' 1">verified_user</i>What to do now</div>
+          <sc-for list="{{ linkR.steps }}" as="sp" hint-placeholder-count="3"><div style="display:flex;gap:10px;align-items:flex-start"><span style="flex:none;width:24px;height:24px;border-radius:50%;background:var(--g);color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center">{{ sp.n }}</span><span translate="no">{{ sp.text }}</span></div></sc-for>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px"><a href="tel:1930" style="height:44px;padding:0 16px;border-radius:12px;background:var(--g);color:#fff;font-weight:600;display:inline-flex;align-items:center;gap:8px;text-decoration:none"><i style="font-size:20px">call</i>Call 1930</a><a href="https://cybercrime.gov.in" target="_blank" rel="noopener" style="height:44px;padding:0 16px;border-radius:12px;background:var(--card);color:var(--text);font-weight:600;display:inline-flex;align-items:center;gap:8px;text-decoration:none"><i style="font-size:20px">open_in_new</i>cybercrime.gov.in</a></div>
+        </div>
+        <sc-if value="{{ linkR.hasOg }}" hint-placeholder-val="{{ false }}">
+          <div data-og style="padding:18px 20px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:12px;text-align:left;align-self:stretch">
+            <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px"><i style="font-size:22px;color:var(--p)">gavel</i>What the regulators say</div>
+            <sc-for list="{{ linkR.og }}" as="g" hint-placeholder-count="2">
+              <div style="display:flex;gap:12px;align-items:flex-start"><span translate="no" style="flex:none;min-width:52px;padding:3px 8px;border-radius:8px;background:var(--ps);color:var(--pt);font-weight:800;font-size:13px;text-align:center">{{ g.badge }}</span><div style="flex:1;display:flex;flex-direction:column;gap:4px"><span translate="no" style="line-height:1.5">{{ g.point }}</span><a href="{{ g.url }}" target="_blank" rel="noopener noreferrer" style="font-size:13px;font-weight:600;color:var(--pt);display:inline-flex;align-items:center;gap:4px;text-decoration:none"><span translate="no">{{ g.source }}</span><i style="font-size:15px">open_in_new</i></a></div></div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ linkR.hasTrust }}" hint-placeholder-val="{{ true }}">
+          <div data-trust style="padding:18px 20px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:10px;text-align:left;align-self:stretch">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;background:{{ linkR.confBg }};color:{{ linkR.confFg }};font-weight:700;font-size:14px"><i style="font-size:18px">{{ linkR.confIcon }}</i>{{ linkR.confLabel }}</span><span style="font-size:13px;color:var(--muted)">How sure are we?</span></div>
+            <sc-for list="{{ linkR.confReasons }}" as="cr" hint-placeholder-count="2"><div style="font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:flex-start"><i style="font-size:17px;margin-top:1px">info</i><span>{{ cr }}</span></div></sc-for>
+            <div style="font-size:15px;line-height:1.5;font-weight:500">{{ linkR.confNote }}</div>
+            <sc-if value="{{ linkR.canReport }}" hint-placeholder-val="{{ false }}"><button data-testid="report-btn" onClick="{{ linkR.onReport }}" style="align-self:flex-start;height:48px;padding:0 18px;border-radius:12px;border:none;background:var(--r);color:#fff;font-weight:700;font-size:16px;cursor:pointer;display:flex;align-items:center;gap:8px"><i style="font-size:21px">campaign</i>Report this scam</button></sc-if>
+          </div>
+        </sc-if>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ socModeText }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:20px">
+  <p style="margin:0;color:var(--muted);font-size:16px">Paste what a “finfluencer” said: a caption, transcript or post. We highlight every manipulation tactic in the text.</p>
   <div style="display:flex;flex-wrap:wrap;gap:8px">
     <sc-for list="{{ socSources }}" as="x" hint-placeholder-count="4"><button onClick="{{ x.onClick }}" style="height:42px;padding:0 16px;border-radius:99px;border:1px solid var(--line);background:{{ x.bg }};color:{{ x.fg }};font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .15s"><i style="font-size:19px">{{ x.icon }}</i>{{ x.label }}</button></sc-for>
   </div>
@@ -702,6 +818,8 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
       </sc-if>
     </div>
   </div>
+  </div>
+  </sc-if>
 </div>
 </sc-if>
 
@@ -738,11 +856,90 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
 </sc-if>
 
 <sc-if value="{{ isHabits }}" hint-placeholder-val="{{ false }}">
-<div data-screen-label="Habit Coach" style="display:flex;flex-direction:column;gap:24px">
+<div data-screen-label="Safety Habits" style="display:flex;flex-direction:column;gap:24px">
   <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px">
-    <div><h1 style="margin:0 0 4px;font-size:clamp(26px,3vw,32px);font-weight:800;letter-spacing:-.03em">Financial Habit Coach</h1><p style="margin:0;color:var(--muted);font-size:17px">Small, safe habits. Tracked every week.</p></div>
+    <div><h1 style="margin:0 0 4px;font-size:clamp(26px,3vw,32px);font-weight:800;letter-spacing:-.03em">Safety Habits</h1><p style="margin:0;color:var(--muted);font-size:17px">Small daily habits that stop scams. Your Safety Score shows how protected you are, and every action raises it.</p></div>
     <div style="min-width:260px;padding:14px 18px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;font-size:14px"><strong style="display:flex;align-items:center;gap:6px"><i style="font-size:20px;color:var(--a);font-variation-settings:'FILL' 1">military_tech</i>{{ level }}</strong><span style="color:var(--muted)">{{ xp }}</span></div><div style="height:8px;border-radius:99px;background:var(--soft);overflow:hidden"><div style="height:100%;width:{{ xpW }};background:linear-gradient(90deg,#F59E0B,#16A34A);border-radius:99px;transition:width 1.2s"></div></div><span style="font-size:12px;color:var(--muted)">{{ xpToNext }}</span></div>
   </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px;align-items:start">
+    <div data-testid="safety-score" style="padding:24px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div style="position:relative;width:160px;height:160px;flex:none"><svg viewBox="0 0 160 160" width="160" height="160"><circle cx="80" cy="80" r="68" fill="none" stroke="var(--soft)" stroke-width="14"></circle><circle cx="80" cy="80" r="68" fill="none" stroke="{{ score.c }}" stroke-width="14" stroke-linecap="round" stroke-dasharray="427.26" stroke-dashoffset="{{ score.off }}" transform="rotate(-90 80 80)" style="transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)"></circle></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05"><strong data-testid="safety-score-value" style="font-size:44px;letter-spacing:-.04em">{{ score.value }}</strong><span style="font-size:13px;color:var(--muted)">of 900</span></div></div>
+        <div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Suraksha Safety Score</div>
+          <span style="align-self:flex-start;padding:5px 14px;border-radius:99px;background:{{ score.bg }};color:{{ score.fg }};font-weight:800;font-size:15px">{{ score.band }}</span>
+          <div style="font-size:14.5px;font-weight:600;color:{{ score.changeC }}">{{ score.change }}</div>
+          <div style="font-size:13.5px;color:var(--muted);line-height:1.45">Like a credit score, but for scam safety: 300 to 900. It rises with real actions, not promises.</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ score.parts }}" as="sp" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="font-weight:600">{{ sp.label }}</span><span style="color:var(--muted)">{{ sp.meta }}</span></div><div style="height:7px;border-radius:99px;background:var(--soft);overflow:hidden"><div style="height:100%;width:{{ sp.w }};background:{{ sp.c }};border-radius:99px;transition:width 1.2s"></div></div></div></sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="padding:24px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:18px;font-weight:700">Raise your score</div>
+        <sc-for list="{{ score.boosters }}" as="b" hint-placeholder-count="4"><button onClick="{{ b.onClick }}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--bg);cursor:pointer;text-align:left;color:var(--text)" style-hover="border-color:var(--p)"><span style="flex:none;width:40px;height:40px;border-radius:12px;background:var(--ps);color:var(--pt);display:grid;place-items:center"><i style="font-size:22px">{{ b.icon }}</i></span><span style="flex:1;font-weight:600;line-height:1.35">{{ b.title }}</span><span style="flex:none;padding:4px 10px;border-radius:99px;background:var(--gs);color:var(--gt);font-weight:800;font-size:13px">{{ b.pts }}</span><i style="font-size:20px;color:var(--muted)">chevron_right</i></button></sc-for>
+        <sc-if value="{{ score.noBoost }}" hint-placeholder-val="{{ false }}"><div style="padding:14px;border-radius:12px;background:var(--gs);color:var(--gt);font-weight:600">Your score is at its best. Keep your daily habits going.</div></sc-if>
+      </div>
+      <div data-testid="weekly-challenge" style="padding:20px 24px;border-radius:20px;background:linear-gradient(135deg,var(--as),var(--ps));border:1px solid var(--line);display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--at)">{{ wc.head }}</span><span style="font-size:13px;color:var(--muted)">{{ wc.left }}</span></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><span style="flex:none;width:44px;height:44px;border-radius:12px;background:var(--card);color:var(--at);display:grid;place-items:center"><i style="font-size:24px">{{ wc.icon }}</i></span><div style="flex:1"><div style="font-weight:700;font-size:16.5px">{{ wc.title }}</div><div style="font-size:14px;color:var(--muted);line-height:1.45">{{ wc.detail }}</div></div></div>
+        <sc-if value="{{ wc.open }}" hint-placeholder-val="{{ true }}"><button data-testid="challenge-done" onClick="{{ wc.onDone }}" style="align-self:flex-start;height:44px;padding:0 18px;border-radius:12px;border:none;background:var(--a);color:#fff;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px"><i style="font-size:20px">task_alt</i>I did it</button></sc-if>
+        <sc-if value="{{ wc.done }}" hint-placeholder-val="{{ false }}"><span style="align-self:flex-start;padding:6px 12px;border-radius:99px;background:var(--gs);color:var(--gt);font-weight:700;display:inline-flex;align-items:center;gap:6px"><i style="font-size:18px">check_circle</i>Done this week</span></sc-if>
+      </div>
+    </div>
+  </div>
+  <div id="daily-goals" data-testid="daily-goals" style="padding:24px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><div style="font-size:18px;font-weight:700">Today's safety goals</div><div style="font-size:14px;color:var(--muted)">Tracked automatically from what you do in the app</div></div><div style="display:flex;gap:10px;align-items:center"><span style="padding:6px 12px;border-radius:99px;background:var(--ps);color:var(--pt);font-weight:800">{{ goalsDone }}</span><span style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:var(--as);color:var(--at);font-weight:800"><i style="font-size:18px;font-variation-settings:'FILL' 1">local_fire_department</i>{{ drillStreak }}</span></div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px">
+      <sc-for list="{{ goals }}" as="gl" hint-placeholder-count="3"><button data-goal="{{ gl.key }}" onClick="{{ gl.onClick }}" style="padding:16px;border-radius:16px;border:{{ gl.border }};background:{{ gl.bg }};cursor:pointer;text-align:left;color:var(--text);display:flex;flex-direction:column;gap:10px" style-hover="transform:translateY(-2px)">
+        <div style="display:flex;align-items:center;gap:10px"><span style="flex:none;width:40px;height:40px;border-radius:12px;background:var(--card);color:{{ gl.c }};display:grid;place-items:center"><i style="font-size:22px">{{ gl.icon }}</i></span><div style="flex:1;line-height:1.3"><div style="font-weight:700">{{ gl.title }}</div><div style="font-size:13px;color:var(--muted)">{{ gl.detail }}</div></div><i style="font-size:26px;color:{{ gl.checkC }};font-variation-settings:'FILL' 1">{{ gl.check }}</i></div>
+        <div style="display:flex;justify-content:space-between;gap:4px"><sc-for list="{{ gl.week }}" as="wd" hint-placeholder-count="7"><span style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--muted)"><span style="width:14px;height:14px;border-radius:50%;background:{{ wd.bg }};border:1.5px solid {{ wd.bd }}"></span>{{ wd.d }}</span></sc-for></div>
+      </button></sc-for>
+    </div>
+  </div>
+  <div id="drill-card" data-testid="drill-card" style="padding:24px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:12px;background:var(--rs);color:var(--rt);display:grid;place-items:center"><i style="font-size:24px">quiz</i></span><div><div style="font-size:18px;font-weight:700">Daily Scam Drill</div><div style="font-size:14px;color:var(--muted)">3 real-style messages a day. Scam or genuine?</div></div></div><div style="display:flex;gap:6px"><sc-for list="{{ drill.dots }}" as="dt" hint-placeholder-count="3"><span style="width:28px;height:8px;border-radius:99px;background:{{ dt.bg }}"></span></sc-for></div></div>
+    <sc-if value="{{ drill.ask }}" hint-placeholder-val="{{ true }}">
+      <div style="font-size:13px;font-weight:700;color:var(--muted)">{{ drill.numLabel }}</div>
+      <div translate="no" data-testid="drill-text" style="align-self:flex-start;max-width:640px;padding:16px 18px;border-radius:4px 18px 18px 18px;background:var(--bg);border:1px solid var(--line);font-size:16.5px;line-height:1.55">{{ drill.text }}</div>
+      <div style="font-weight:700;font-size:16px">Is this a scam or a genuine message?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:520px">
+        <button data-testid="drill-scam" onClick="{{ drill.onScam }}" style="height:56px;border-radius:14px;border:none;background:var(--r);color:#fff;font-weight:800;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;opacity:{{ drill.op }}"><i style="font-size:22px">gpp_bad</i>Scam</button>
+        <button data-testid="drill-genuine" onClick="{{ drill.onGenuine }}" style="height:56px;border-radius:14px;border:none;background:var(--g);color:#fff;font-weight:800;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;opacity:{{ drill.op }}"><i style="font-size:22px">verified_user</i>Genuine</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ drill.show }}" hint-placeholder-val="{{ false }}">
+      <div data-testid="drill-result" style="padding:14px 16px;border-radius:14px;background:{{ drill.resBg }};color:{{ drill.resFg }};display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;animation:sk-in .3s ease"><i style="font-size:26px;font-variation-settings:'FILL' 1">{{ drill.resIcon }}</i>{{ drill.resTitle }}</div>
+      <div translate="no" style="align-self:flex-start;max-width:640px;padding:16px 18px;border-radius:4px 18px 18px 18px;background:var(--bg);border:1px solid var(--line);font-size:16.5px;line-height:1.7"><sc-for list="{{ drill.segs }}" as="g" hint-placeholder-count="3"><span style="background:{{ g.bg }};border-bottom:{{ g.line }};padding:{{ g.pad }};border-radius:3px;font-weight:{{ g.weight }}">{{ g.text }}</span></sc-for></div>
+      <div style="display:flex;gap:10px;align-items:flex-start"><i style="font-size:22px;color:var(--p)">lightbulb</i><span style="line-height:1.55"><strong>{{ drill.labelText }}</strong> {{ drill.tip }}</span></div>
+      <sc-if value="{{ drill.hasSignals }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ drill.signals }}" as="sg" hint-placeholder-count="2"><span style="padding:4px 10px;border-radius:99px;background:var(--rs);color:var(--rt);font-size:13px;font-weight:700">{{ sg }}</span></sc-for></div></sc-if>
+      <button data-testid="drill-next" onClick="{{ drill.onNext }}" style="align-self:flex-start;height:46px;padding:0 18px;border-radius:12px;border:none;background:var(--p);color:#fff;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">{{ drill.nextLabel }}<i style="font-size:20px">arrow_forward</i></button>
+    </sc-if>
+    <sc-if value="{{ drill.finished }}" hint-placeholder-val="{{ false }}">
+      <div data-testid="drill-done" style="display:flex;flex-wrap:wrap;gap:12px">
+        <div style="flex:1;min-width:150px;padding:16px;border-radius:14px;background:var(--gs);color:var(--gt)"><div style="font-size:28px;font-weight:800">{{ drill.score }}</div><div style="font-weight:600">correct today</div></div>
+        <div style="flex:1;min-width:150px;padding:16px;border-radius:14px;background:var(--ps);color:var(--pt)"><div style="font-size:28px;font-weight:800">{{ drill.acc }}</div><div style="font-weight:600">30-day accuracy</div></div>
+        <div style="flex:1;min-width:150px;padding:16px;border-radius:14px;background:var(--as);color:var(--at)"><div style="font-size:28px;font-weight:800">{{ drill.streak }}</div><div style="font-weight:600">day drill streak</div></div>
+      </div>
+      <sc-for list="{{ drill.review }}" as="rv" hint-placeholder-count="3"><div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)"><i style="font-size:22px;color:{{ rv.c }};font-variation-settings:'FILL' 1">{{ rv.icon }}</i><div style="flex:1;min-width:0"><div translate="no" style="font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ rv.text }}</div><div style="font-size:13px;color:var(--muted)">{{ rv.label }}</div></div></div></sc-for>
+      <div style="font-size:14px;color:var(--muted)">Come back tomorrow for 3 new messages.</div>
+    </sc-if>
+  </div>
+  <div id="shield-card" data-testid="shield-card" style="padding:24px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:12px;background:var(--gs);color:var(--gt);display:grid;place-items:center"><i style="font-size:24px;font-variation-settings:'FILL' 1">shield</i></span><div><div style="font-size:18px;font-weight:700">Safety Shield</div><div style="font-size:14px;color:var(--muted)">One-time steps that block the most common scams</div></div></div><span style="padding:6px 12px;border-radius:99px;background:var(--gs);color:var(--gt);font-weight:800">{{ shieldDone }}</span></div>
+    <div style="height:8px;border-radius:99px;background:var(--soft);overflow:hidden"><div style="height:100%;width:{{ shieldW }};background:var(--g);border-radius:99px;transition:width 1s"></div></div>
+    <sc-for list="{{ shield }}" as="sh" hint-placeholder-count="5"><div data-shield="{{ sh.key }}" style="display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;background:{{ sh.bg }};border:1px solid var(--line)">
+      <span style="flex:none;width:40px;height:40px;border-radius:12px;background:var(--card);color:{{ sh.c }};display:grid;place-items:center"><i style="font-size:22px">{{ sh.icon }}</i></span>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><button onClick="{{ sh.onToggleOpen }}" style="border:none;background:transparent;padding:0;text-align:left;cursor:pointer;color:var(--text);font-weight:650;font-size:15.5px;display:flex;align-items:center;gap:6px">{{ sh.title }}<i style="font-size:18px;color:var(--muted)">{{ sh.chev }}</i></button><span style="font-size:13.5px;color:var(--muted);line-height:1.45">{{ sh.why }}</span>
+        <sc-if value="{{ sh.open }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;padding:10px 12px;border-radius:10px;background:var(--card)"><span style="font-size:14px;line-height:1.5"><strong>How:</strong> {{ sh.how }}</span><sc-if value="{{ sh.link }}" hint-placeholder-val="{{ true }}"><a href="{{ sh.link }}" target="_blank" rel="noopener noreferrer" style="align-self:flex-start;font-size:13.5px;font-weight:600;color:var(--pt);display:inline-flex;align-items:center;gap:4px;text-decoration:none">Open the official page<i style="font-size:15px">open_in_new</i></a></sc-if></div></sc-if>
+      </div>
+      <sc-if value="{{ sh.canTick }}" hint-placeholder-val="{{ true }}"><button data-testid="shield-btn" onClick="{{ sh.onTick }}" style="flex:none;height:40px;padding:0 14px;border-radius:10px;border:{{ sh.btnBd }};background:{{ sh.btnBg }};color:{{ sh.btnFg }};font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px"><i style="font-size:18px">{{ sh.btnIcon }}</i>{{ sh.btnLabel }}</button></sc-if>
+      <sc-if value="{{ sh.isAuto }}" hint-placeholder-val="{{ false }}"><span style="flex:none;padding:6px 10px;border-radius:10px;background:{{ sh.autoBg }};color:{{ sh.autoFg }};font-size:13px;font-weight:700">{{ sh.autoLabel }}</span></sc-if>
+    </div></sc-for>
+  </div>
+  <div style="font-size:20px;font-weight:700;margin-bottom:-8px">Your progress</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px">
     <sc-for list="{{ trackers }}" as="t" hint-placeholder-count="4">
       <div style="padding:20px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);display:flex;align-items:center;gap:16px;transition:transform .25s,box-shadow .25s" style-hover="transform:translateY(-3px);box-shadow:var(--sh2)">
@@ -843,7 +1040,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
 
 <sc-if value="{{ isElder }}" hint-placeholder-val="{{ false }}">
 <div data-screen-label="Elderly Protection" style="display:flex;flex-direction:column;gap:24px;font-size:19px">
-  <div><h1 style="margin:0 0 6px;font-size:clamp(30px,3.6vw,38px);font-weight:800;letter-spacing:-.03em">Senior Safety</h1><p style="margin:0;color:var(--muted);font-size:20px">Simple tools to keep you and your savings safe.</p></div>
+  <div><h1 style="margin:0 0 6px;font-size:clamp(30px,3.6vw,38px);font-weight:800;letter-spacing:-.03em">{{ elderTitle }}</h1><p style="margin:0;color:var(--muted);font-size:20px">{{ elderSub }}</p></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px;align-items:stretch">
     <div style="padding:28px;border-radius:24px;background:var(--card);border:2px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center">
       <sc-if value="{{ helpIdle }}" hint-placeholder-val="{{ true }}">
@@ -866,6 +1063,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
         <button onClick="{{ helpCancel }}" style="height:60px;padding:0 32px;border-radius:16px;border:2px solid var(--line);background:var(--card);font-size:20px;font-weight:700;cursor:pointer">Done</button>
       </sc-if>
     </div>
+    <sc-if value="{{ isSeniorUser }}" hint-placeholder-val="{{ true }}">
     <div style="padding:24px;border-radius:24px;background:var(--card);border:2px solid var(--line);display:flex;flex-direction:column;gap:6px">
       <div style="font-size:22px;font-weight:700;margin-bottom:8px">Senior-friendly mode</div>
       <sc-for list="{{ elderToggles }}" as="t" hint-placeholder-count="3">
@@ -873,6 +1071,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
           <button data-toggle="{{ t.k }}" onClick="{{ t.tog.onClick }}" aria-label="{{ t.l }}" style="width:64px;height:36px;border-radius:999px;border:none;background:{{ t.tog.track }};position:relative;cursor:pointer;flex:none;transition:background .2s"><span style="position:absolute;top:4px;left:4px;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transform:{{ t.tog.knob }};transition:transform .2s;scale:1"></span></button></div>
       </sc-for>
     </div>
+    </sc-if>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:20px">
     <div style="padding:24px;border-radius:24px;background:var(--card);border:2px solid var(--line);display:flex;flex-direction:column;gap:14px">
@@ -967,6 +1166,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.8}
     <div style="display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;padding:14px 0 6px"><i style="font-size:22px;color:var(--p)">palette</i>Appearance</div>
     <div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-weight:600">Dark Mode</div><div style="font-size:14px;color:var(--muted)">Easier on the eyes at night</div></div><button onClick="{{ darkTog.onClick }}" style="width:48px;height:28px;border-radius:999px;border:none;background:{{ darkTog.track }};position:relative;cursor:pointer;flex:none;transition:background .2s"><span style="position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transform:{{ darkTog.knob }};transition:transform .2s"></span></button></div>
     <div style="display:flex;align-items:center;gap:16px;padding:14px 0"><div style="flex:1"><div style="font-weight:600">High contrast</div><div style="font-size:14px;color:var(--muted)">Stronger borders and pure black text</div></div><button onClick="{{ contrastTog.onClick }}" style="width:48px;height:28px;border-radius:999px;border:none;background:{{ contrastTog.track }};position:relative;cursor:pointer;flex:none;transition:background .2s"><span style="position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transform:{{ contrastTog.knob }};transition:transform .2s"></span></button></div>
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 0"><div style="flex:1"><div style="font-weight:600">Larger text</div><div style="font-size:14px;color:var(--muted)">Bigger text and simpler screens</div></div><button data-testid="larger-text" onClick="{{ seniorTog.onClick }}" style="width:48px;height:28px;border-radius:999px;border:none;background:{{ seniorTog.track }};position:relative;cursor:pointer;flex:none;transition:background .2s"><span style="position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transform:{{ seniorTog.knob }};transition:transform .2s"></span></button></div>
   </div>
   <div style="padding:8px 24px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh)">
     <div style="display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;padding:14px 0 6px"><i style="font-size:22px;color:var(--p)">notifications</i>Notification Preferences</div>
@@ -1069,7 +1269,7 @@ const LANGS=['English','Hindi'];
 // Indian states / UTs and their main cities (same list as backend/utils/india.py).
 const INDIA={"Andaman and Nicobar Islands":"Sri Vijaya Puram (Port Blair)|Car Nicobar|Mayabunder|Diglipur","Andhra Pradesh":"Visakhapatnam|Vijayawada|Guntur|Nellore|Kurnool|Tirupati|Kakinada|Rajahmundry|Kadapa|Anantapur|Eluru|Ongole|Srikakulam|Vizianagaram|Amaravati","Arunachal Pradesh":"Itanagar|Naharlagun|Pasighat|Tawang|Ziro|Bomdila|Tezu","Assam":"Guwahati|Dibrugarh|Silchar|Jorhat|Tezpur|Nagaon|Tinsukia|Bongaigaon|Dhubri|Karimganj|Dispur","Bihar":"Patna|Gaya|Bhagalpur|Muzaffarpur|Darbhanga|Purnia|Arrah|Begusarai|Katihar|Munger|Chhapra|Bihar Sharif|Sasaram|Hajipur|Motihari","Chandigarh":"Chandigarh","Chhattisgarh":"Raipur|Bhilai|Bilaspur|Korba|Durg|Rajnandgaon|Jagdalpur|Raigarh|Ambikapur","Dadra and Nagar Haveli and Daman and Diu":"Silvassa|Daman|Diu","Delhi":"New Delhi|North Delhi|South Delhi|East Delhi|West Delhi|Central Delhi|Dwarka|Rohini|Shahdara","Goa":"Panaji|Margao|Vasco da Gama|Mapusa|Ponda","Gujarat":"Ahmedabad|Surat|Vadodara|Rajkot|Bhavnagar|Jamnagar|Gandhinagar|Junagadh|Anand|Navsari|Morbi|Bharuch|Mehsana|Bhuj|Porbandar|Vapi","Haryana":"Gurugram|Faridabad|Panipat|Ambala|Hisar|Rohtak|Karnal|Sonipat|Yamunanagar|Panchkula|Bhiwani|Sirsa|Rewari|Kurukshetra","Himachal Pradesh":"Shimla|Dharamshala|Mandi|Solan|Kullu|Manali|Hamirpur|Una|Bilaspur|Chamba|Kangra","Jammu and Kashmir":"Srinagar|Jammu|Anantnag|Baramulla|Sopore|Kathua|Udhampur|Rajouri|Pulwama","Jharkhand":"Ranchi|Jamshedpur|Dhanbad|Bokaro Steel City|Deoghar|Hazaribagh|Giridih|Ramgarh|Dumka","Karnataka":"Bengaluru|Mysuru|Mangaluru|Hubballi|Dharwad|Belagavi|Kalaburagi|Ballari|Davanagere|Shivamogga|Tumakuru|Vijayapura|Udupi|Hassan|Raichur|Bidar","Kerala":"Thiruvananthapuram|Kochi|Kozhikode|Thrissur|Kollam|Kannur|Alappuzha|Palakkad|Kottayam|Malappuram|Kasaragod|Pathanamthitta|Idukki|Wayanad","Ladakh":"Leh|Kargil","Lakshadweep":"Kavaratti|Agatti|Minicoy|Andrott","Madhya Pradesh":"Indore|Bhopal|Jabalpur|Gwalior|Ujjain|Sagar|Dewas|Satna|Ratlam|Rewa|Katni|Singrauli|Burhanpur|Khandwa|Chhindwara|Morena|Vidisha","Maharashtra":"Mumbai|Pune|Nagpur|Thane|Nashik|Navi Mumbai|Chhatrapati Sambhajinagar (Aurangabad)|Solapur|Kolhapur|Amravati|Nanded|Sangli|Jalgaon|Akola|Latur|Dhule|Ahilyanagar (Ahmednagar)|Satara|Ratnagiri|Vasai-Virar|Kalyan-Dombivli","Manipur":"Imphal|Thoubal|Bishnupur|Churachandpur|Ukhrul|Kakching","Meghalaya":"Shillong|Tura|Jowai|Nongstoin|Baghmara","Mizoram":"Aizawl|Lunglei|Champhai|Serchhip|Kolasib","Nagaland":"Kohima|Dimapur|Mokokchung|Tuensang|Wokha|Mon","Odisha":"Bhubaneswar|Cuttack|Rourkela|Berhampur|Sambalpur|Puri|Balasore|Bhadrak|Baripada|Jharsuguda|Angul|Koraput","Puducherry":"Puducherry|Karaikal|Mahe|Yanam","Punjab":"Ludhiana|Amritsar|Jalandhar|Patiala|Bathinda|Mohali|Pathankot|Hoshiarpur|Moga|Firozpur|Kapurthala|Sangrur","Rajasthan":"Jaipur|Jodhpur|Kota|Bikaner|Ajmer|Udaipur|Bhilwara|Alwar|Bharatpur|Sikar|Sri Ganganagar|Pali|Chittorgarh|Jhunjhunu|Tonk|Barmer","Sikkim":"Gangtok|Namchi|Gyalshing|Mangan|Rangpo","Tamil Nadu":"Chennai|Coimbatore|Madurai|Tiruchirappalli|Salem|Tirunelveli|Tiruppur|Erode|Vellore|Thoothukudi|Thanjavur|Dindigul|Kanchipuram|Nagercoil|Hosur|Karur|Cuddalore","Telangana":"Hyderabad|Secunderabad|Warangal|Nizamabad|Karimnagar|Khammam|Ramagundam|Mahbubnagar|Nalgonda|Adilabad|Siddipet","Tripura":"Agartala|Udaipur|Dharmanagar|Kailashahar|Belonia|Ambassa","Uttar Pradesh":"Lucknow|Kanpur|Ghaziabad|Agra|Varanasi|Meerut|Prayagraj|Noida|Greater Noida|Bareilly|Aligarh|Moradabad|Saharanpur|Gorakhpur|Jhansi|Ayodhya|Mathura|Firozabad|Muzaffarnagar|Shahjahanpur|Rampur|Etawah|Rae Bareli","Uttarakhand":"Dehradun|Haridwar|Roorkee|Haldwani|Rudrapur|Kashipur|Rishikesh|Nainital|Almora|Pithoragarh","West Bengal":"Kolkata|Howrah|Durgapur|Asansol|Siliguri|Bardhaman|Malda|Kharagpur|Haldia|Baharampur|Darjeeling|Krishnanagar|Jalpaiguri|Cooch Behar"};
 const VLANGS=[{n:'Hindi',c:'hi-IN',x:'हिन्दी'},{n:'English',c:'en-IN',x:'English'}];
-const NAV=[{id:'dashboard',label:'Dashboard',icon:'space_dashboard'},{id:'scam',label:'Scam Detector',icon:'gpp_maybe'},{id:'msg',label:'Message Scanner',icon:'chat'},{id:'social',label:'Social Media Analyzer',icon:'campaign'},{id:'habits',label:'Habit Tracker',icon:'savings'},{id:'learn',label:'Learning Center',icon:'school'},{id:'voice',label:'Voice Assistant',icon:'mic'},{id:'alerts',label:'Safety Alerts',icon:'notifications'},{id:'elder',label:'Elderly Protection',icon:'elderly'},{id:'ready',label:'Family Readiness',icon:'family_restroom'},{id:'settings',label:'Settings',icon:'settings'}];
+const NAV=[{id:'dashboard',label:'Dashboard',icon:'space_dashboard'},{id:'scam',label:'Scam Detector',icon:'gpp_maybe'},{id:'msg',label:'Message Scanner',icon:'chat'},{id:'social',label:'Link Checker',icon:'travel_explore'},{id:'habits',label:'Safety Habits',icon:'verified_user'},{id:'learn',label:'Learning Center',icon:'school'},{id:'voice',label:'Voice Assistant',icon:'mic'},{id:'alerts',label:'Safety Alerts',icon:'notifications'},{id:'elder',label:'Elderly Protection',icon:'elderly'},{id:'ready',label:'Family Readiness',icon:'family_restroom'},{id:'settings',label:'Settings',icon:'settings'}];
 const MNAV=[{id:'dashboard',label:'Home',icon:'home'},{id:'scam',label:'Scan',icon:'document_scanner'},{id:'learn',label:'Learn',icon:'school'},{id:'alerts',label:'Alerts',icon:'notifications'},{id:'settings',label:'Profile',icon:'person'}];
 const TONE={r:{fg:'var(--rt)',bg:'var(--rs)',c:'var(--r)'},a:{fg:'var(--at)',bg:'var(--as)',c:'var(--a)'},g:{fg:'var(--gt)',bg:'var(--gs)',c:'var(--g)'},p:{fg:'var(--pt)',bg:'var(--ps)',c:'var(--p)'},v:{fg:'var(--v)',bg:'var(--vs)',c:'var(--v)'}};
 const ALERTS0_DEMO=[
@@ -1338,6 +1538,23 @@ function alertFromApi(a){ const ui = ALERT_UI[a.alert_type] || {type:'Reports', 
           time: ago(a.created_at), unread: !a.is_read, action: ui.action, to: ui.to}; }
 const initials = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
 const TOPIC_UI = {scam_detection:{i:'gpp_maybe',c:'g'}, upi_frauds:{i:'qr_code_2',c:'a'}, cyber_safety:{i:'lock',c:'r'}, financial_literacy:{i:'menu_book',c:'p'}};
+const LINK_PLAT={instagram:{icon:'photo_camera',c:'#E1306C',label:'Instagram'},youtube:{icon:'smart_display',c:'#FF0033',label:'YouTube'},telegram:{icon:'send',c:'#229ED9',label:'Telegram'},x:{icon:'tag',c:'var(--text)',label:'X (Twitter)'},facebook:{icon:'thumb_up',c:'#1877F2',label:'Facebook'},whatsapp:{icon:'chat',c:'#25D366',label:'WhatsApp'},other:{icon:'public',c:'var(--p)',label:'Website'}};
+const linkPlatOf=u=>{const host=(((String(u||'').trim().match(/^(?:https?:\/\/)?([^\/?#\s]+)/i)||[])[1])||'').toLowerCase(),is=(...d)=>d.some(x=>host===x||host.endsWith('.'+x));
+  return is('instagram.com','instagr.am')?'instagram':is('youtube.com','youtu.be')?'youtube':is('t.me','telegram.me','telegram.dog')?'telegram':is('x.com','twitter.com')?'x':is('facebook.com','fb.watch','fb.com')?'facebook':is('chat.whatsapp.com','wa.me','whatsapp.com')?'whatsapp':'other';};
+const LINK_STEPS=[['link','Opening the link safely'],['article','Reading the caption and text'],['hearing','Listening to what is said in the video'],['fact_check','Checking claims: returns, SEBI registration, payments'],['psychology','AI is weighing the evidence']];
+const LINK_HOW=[{icon:'content_paste',t:'Paste any link',d:'Instagram reels, YouTube videos and shorts, Telegram channels and posts, X posts, WhatsApp invites or any website.'},
+  {icon:'article',t:'We read it for you',d:'Title, caption, the words spoken in the video and the page text. No login, nothing is posted.'},
+  {icon:'fact_check',t:'Claims are fact-checked',d:'Impossible returns are calculated, SEBI registration claims checked, and payment requests and private-group funnels flagged.'},
+  {icon:'psychology',t:'Our AI explains the verdict',d:'A clear verdict with reasons, quotes as evidence, what the regulators say and what to do next.'},
+  {icon:'lock',t:'Private by design',d:'Runs on our own server. OTPs, card and Aadhaar numbers are hidden before the AI reads anything.'}];
+const LINK_KIND={video:'video',post:'post',channel:'channel',group:'group invite',page:'page',chat:'chat link'};
+const CLAIM_UI={'false':{tag:'False',t:'r'},misleading:{tag:'Misleading',t:'r'},unverifiable:{tag:'Unverifiable',t:'a'},plausible:{tag:'Plausible',t:'g'}};
+const CHECK_UI={fail:{icon:'cancel',t:'r'},warn:{icon:'warning',t:'a'},pass:{icon:'check_circle',t:'g'},info:{icon:'info',t:'p'}};
+const VERDICT_T={scam:'r',suspicious:'a',no_signs:'g',unclear:'p'};
+const SRC_TAG={check:'Fact check',rules:'Safety rules',ai:'AI'};
+const PART_C={shield:'var(--g)',drill:'var(--r)',consistency:'var(--a)',awareness:'var(--v)',vigilance:'var(--p)',family:'#0EA5E9'};
+const BOOST_TO={drill:'drill-card',shield:'shield-card',consistency:'daily-goals'};
+const URL_ONLY=/^(?:https?:\/\/)?[\w-]+(?:\.[\w-]+)+(?:[\/?#]\S*)?$/i;
 const TRACK_UI = {emergency_fund:{i:'savings',c:'#16A34A'}, savings:{i:'event_repeat',c:'#5B6CFF'}, learning:{i:'school',c:'#F59E0B'}, awareness:{i:'gpp_good',c:'#7C3AED'}};
 
 class Component extends DCLogic {
@@ -1347,6 +1564,7 @@ class Component extends DCLogic {
     scamText:'',scamFile:null,scamDrag:false,scamStatus:'idle',scamRes:null,needleOn:false,
     msgText:MSG_SAMPLE,msgStatus:'idle',msgRes:null,
     socSource:'YouTube transcript',socText:SOC_SAMPLE,socStatus:'idle',socRes:null,socActive:null,
+    socMode:'link',linkUrl:'',linkStatus:'idle',linkRes:null,linkStep:0,msgShotName:'',msgDrag:false,msgMic:false,drillLast:null,drillBusy:false,shieldOpen:null,
     vLang:'Hindi',vInput:'',vListening:false,vLoading:false,vSpeak:true,vSpeaking:false,vPlaying:null,
     vMsgs:[{role:'assistant',text:'Namaste! Paste or speak any message and I will tell you if it looks like a scam. I never give stock tips.'}],
     flip:{},quizIdx:0,quizSel:null,quizChecked:false,quizRes:null,activeModule:null,
@@ -1449,7 +1667,7 @@ class Component extends DCLogic {
     if(this._storyPlay){this._storyPlay=false;this.storyStop();this.setState({storyPlaying:false});}
     else{this._storyPlay=true;this.setState({storyPlaying:true});this.storyShow(this._storyI);}}
   say(text){if(!text)return;Speech.speak(text,{lang:SPEECH[this.langCode()]||'en-IN',rate:this.state.senior?.85:.95,server:this.state.user?(x,l)=>this.ttsServer(x,l):null});}
-  currentResult(){const s=this.state;return s.page==='scam'?s.scamRes:s.page==='msg'?s.msgRes:s.page==='social'?s.socRes:null;}
+  currentResult(){const s=this.state;return s.page==='scam'?s.scamRes:s.page==='msg'?s.msgRes:s.page==='social'?(s.socMode==='link'?(s.linkRes?fromApi(s.linkRes,''):null):s.socRes):null;}
   readScreen(){const root=document.querySelector('[data-screen-label]');if(!root)return;const parts=[],h=root.querySelector('h1');if(h)parts.push(h.innerText.trim());
     const res=this.currentResult();
     if(res&&res.verdict)parts.push(res.verdict.headline,res.verdict.action);
@@ -1578,6 +1796,44 @@ class Component extends DCLogic {
     setTimeout(()=>this.setState({needleOn:true}),80);
     if(this.state.voiceNav)setTimeout(()=>this.readScreen(),400);
   }
+  // ---------- Link Checker / message input / safety habits ----------
+  msgFileRef=React.createRef();
+  async checkLink(raw){const url=String(raw==null?this.state.linkUrl:raw).trim();
+    if(!url)return this.toastMsg(_t('Paste a link to check.'));
+    if(!this.state.user)return this.toastMsg(_t('Log in first: the link is opened safely on our server.'));
+    clearInterval(this._linkTk);this.setState({socMode:'link',linkUrl:url,linkStatus:'loading',linkRes:null,linkStep:0});
+    this._linkTk=setInterval(()=>this.setState(s=>({linkStep:Math.min(s.linkStep+1,LINK_STEPS.length-1)})),2400);
+    const ticket=this._linkTicket=(this._linkTicket||0)+1;
+    try{const r=await api.post('/analyze/link',{url,language:this.langCode()});if(ticket!==this._linkTicket)return;
+      this.setState({linkStatus:'done',linkRes:r});this.refreshAfterAction();if(this.state.voiceNav)setTimeout(()=>this.readScreen(),400);}
+    catch(e){if(ticket!==this._linkTicket)return;this.setState({linkStatus:'idle'});this.toastMsg(e.message);}
+    finally{if(ticket===this._linkTicket)clearInterval(this._linkTk);}}
+  async readClipboard(){try{return (await navigator.clipboard.readText())||'';}catch(e){this.toastMsg(_t('Allow clipboard access, or long-press the box and choose Paste.'));return null;}}
+  smartScan(text){text=String(text||'').trim();if(!text)return this.toastMsg(_t('Clipboard is empty.'));
+    if(URL_ONLY.test(text)){this.toastMsg(_t('That is a link. Opening the Link Checker.'));this.go('social');setTimeout(()=>this.checkLink(text),200);return;}
+    this.setState({msgText:text,msgShotName:''});this.analyze('msg',text,'WhatsApp/SMS message');}
+  async scanMsgImage(f){if(!f)return;if(!/^image\//.test(f.type||''))return this.toastMsg(_t('Choose a screenshot image (PNG or JPG).'));
+    if(!this.state.user)return this.toastMsg(_t('Log in first to read screenshots.'));
+    this.setState({msgStatus:'loading',msgRes:null,msgShotName:f.name||'screenshot'});
+    try{const fd=new FormData();fd.append('file',f);fd.append('language',this.langCode());const r=await api.upload('/analyze/message-image',fd);
+      const text=r.extracted_text||'';this.setState({msgText:text,msgStatus:'done',msgRes:fromApi(r,text)});setTimeout(()=>this.setState({needleOn:true}),80);this.refreshAfterAction();
+      if(this.state.voiceNav)setTimeout(()=>this.readScreen(),400);}
+    catch(e){this.setState({msgStatus:'idle',msgShotName:''});this.toastMsg(e.message);}}
+  dictateMsg(){if(this.state.msgMic){try{this._msgRec&&this._msgRec.stop();}catch(e){}return;}
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return this.toastMsg(_t('Voice typing is not supported in this browser. Try Chrome.'));
+    try{const r=new SR();r.lang=SPEECH[this.langCode()]||'en-IN';r.interimResults=false;r.continuous=true;let heard='';
+      r.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)heard+=e.results[i][0].transcript+' ';};
+      r.onerror=ev=>{if(ev&&ev.error==='not-allowed')this.toastMsg(_t('Microphone permission was denied.'));};
+      r.onend=()=>{this.setState({msgMic:false});heard=heard.trim();if(heard){const cur=(this.state.msgText||'').trim(),t=(cur&&cur!==MSG_SAMPLE.trim()?cur+' ':'')+heard;this.setState({msgText:t,msgShotName:''});this.analyze('msg',t,'WhatsApp/SMS message');}};
+      this._msgRec=r;r.start();this.setState({msgMic:true});this.toastMsg(_t('Listening… read the message aloud, then tap Stop.'));}catch(e){this.setState({msgMic:false});}}
+  async drillAnswer(id,answer){if(this.state.drillBusy)return;this.setState({drillBusy:true});
+    try{const r=await api.post('/habits/drill/answer',{item_id:id,answer});this.setState({drillLast:r});if(r.correct&&r.done)this.confetti();
+      if(r.xp_awarded)this.toastMsg(`+${r.xp_awarded} XP`);await this.loadHabits();}catch(e){this.toastMsg(e.message);}finally{this.setState({drillBusy:false});}}
+  async setShield(key,done){try{await api.put('/habits/shield/'+key,{completed:done});if(done)this.toastMsg(_t('Safety Shield step done. +40 XP'));await this.loadHabits();}catch(e){this.toastMsg(e.message);}}
+  async doChallenge(){try{const r=await api.post('/habits/weekly-challenge');this.toastMsg(r.detail);this.confetti();await this.loadHabits();}catch(e){this.toastMsg(e.message);}}
+  practised(){const c=this.state.course,id=c&&c.id;if(!id||!this.state.user)return;this._practised=this._practised||{};if(this._practised[id])return;this._practised[id]=1;
+    api.post('/learning/courses/'+id+'/flashcards/practised').then(()=>this.loadHabits()).catch(()=>{this._practised[id]=0;});}
+  boost(b){const id=BOOST_TO[b.key];if(b.page==='habits'&&id)return this.jump(id);this.go(b.page);}
   onFile(f){
     if(!f)return;this._file=null;const info={name:f.name,size:(f.size/1024).toFixed(0)+' KB',type:f.type,kind:f.type.startsWith('image/')?'image':f.type==='application/pdf'?'pdf':'text'};
     if(info.kind==='text'||f.type.startsWith('text/')){f.text().then(t=>this.setState({scamFile:info,scamText:t.slice(0,4000)}));}
@@ -1718,7 +1974,82 @@ class Component extends DCLogic {
     const firstName=(u.name||'').split(' ')[0]||'friend';
     const levelInfo=gam||(dash&&dash.level)||{xp:0,level:1,label:'Level 1 · Beginner',xp_to_next:100,progress_pct:0};
     const typeLabel=TYPE_LABELS[u.user_type]||'Member';
+    // ---- Link Checker view
+    const isSeniorUser=u.user_type==='senior_citizen';
+    const lr=s.linkRes;let linkR=null,linkSegs=[];
+    if(lr){const vt=VERDICT_T[lr.verdict.key]||'a',src=lr.source||{},pl=LINK_PLAT[lr.platform]||LINK_PLAT.other,base=fromApi(lr,'');
+      linkR={...trustV(base),fg:TONE[vt].fg,bg:TONE[vt].bg,c:TONE[vt].c,icon:lr.verdict.icon,label:lr.verdict.label,headline:lr.verdict.headline!==lr.verdict.label?lr.verdict.headline:'',summary:lr.verdict.summary,score:lr.risk_score,barW:lr.risk_score+'%',
+        srcLabel:lr.engine&&lr.engine.llm_used?'Analyzed by Suraksha AI':'Checked by Suraksha AI safety rules',
+        platIcon:pl.icon,platC:pl.c,title:src.title||lr.final_url||lr.url,url:lr.final_url||lr.url,
+        sourceLine:[(src.platform_name||pl.label)+' '+(LINK_KIND[src.kind]||src.kind||''),src.author,src.published].filter(Boolean).join(' · '),
+        parts:src.parts||[],hasLimits:(lr.limitations||[]).length>0,limits:lr.limitations||[],
+        hasReasons:(lr.reasons||[]).some(x=>x.source!=='check'),reasons:(lr.reasons||[]).filter(x=>x.source!=='check').map(x=>({title:x.title,detail:x.detail||'',evidence:x.evidence||'',src:SRC_TAG[x.source]||x.source})),
+        hasChecks:(lr.checks||[]).length>0,checks:(lr.checks||[]).map(c=>{const ui=CHECK_UI[c.status]||CHECK_UI.info,T=TONE[ui.t];return {label:c.label,detail:c.detail,link:c.link||'',icon:ui.icon,c:T.c,fg:T.fg,bg:T.bg};}),
+        hasClaims:(lr.claims||[]).length>0,claims:(lr.claims||[]).map(c=>{const ui=CLAIM_UI[c.assessment]||CLAIM_UI.unverifiable;return {claim:c.claim,why:c.why,tag:ui.tag,bg:TONE[ui.t].bg,fg:TONE[ui.t].fg};}),
+        explanation:lr.explanation||'',hasGenuine:(lr.genuine_signals||[]).length>0,genuine:lr.genuine_signals||[],
+        steps:(lr.what_to_do||[]).map((t,i)=>({text:t,n:String(i+1)})),
+        hasOg:!!(lr.official_guidance&&lr.official_guidance.length),og:(lr.official_guidance||[]).map(g=>({badge:({'Department of Telecommunications':'DoT'})[g.authority]||g.authority.split(',')[0],point:g.point,source:g.source,url:g.url})),
+        canReport:!!(lr.analysis_id&&lr.risk_level!=='low'),onReport:()=>this.openReport(base)};
+      linkSegs=(lr.segments||[]).map(g=>{const name=g.risky&&g.tactics.length?(SOCIAL_TACTIC[g.tactics[0]]||'Unverified promises'):null,m=name?TACT[name]:null;
+        return {text:g.text,bg:m?m.bg:'transparent',fg:m?m.fg:'inherit',line:m?`2px solid ${m.c}`:'none',pad:m?'1px 3px':'0',weight:m?600:400,title:name||''};});}
+    const linkPlatKey=linkPlatOf(s.linkUrl),lpp=LINK_PLAT[linkPlatKey];
+    const linkPlat={icon:s.linkUrl?lpp.icon:'link',c:s.linkUrl?lpp.c:'var(--muted)',
+      hint:!s.linkUrl?_t('Tip: in Instagram, YouTube or Telegram tap Share, then Copy link.'):linkPlatKey==='other'?_t('Website link: we will read the page and check where it really goes.'):_t('{0} link detected.').replace('{0}',lpp.label)};
+    const linkPlatforms=['instagram','youtube','telegram','x','other'].map(k=>{const pp=LINK_PLAT[k],on=!!s.linkUrl&&linkPlatKey===k;return {icon:pp.icon,label:k==='other'?'Any website':pp.label,bg:on?'var(--ps)':'var(--soft)',fg:on?'var(--pt)':'var(--muted)'};});
+    const linkSteps=LINK_STEPS.map(([icon,t],i)=>{const done=i<s.linkStep,cur=i===s.linkStep;return {icon:done?'check_circle':cur?'autorenew':icon,t,c:done?'var(--g)':cur?'var(--p)':'var(--muted)',op:i>s.linkStep?.45:1,w:cur?700:500,anim:cur?'sk-spin 1.1s linear infinite':'none'};});
+    // ---- Safety Habits view
+    const H=habits||{},ss=H.safety_score,dr=H.drill,dg=H.daily,wch=H.weekly_challenge,shl=H.shield||[];
+    const safetyV=ss?{value:String(ss.score),band:ss.band,bg:TONE[ss.tone].bg,fg:TONE[ss.tone].fg,c:TONE[ss.tone].c,off:s.ringOn?427.26*(1-ss.pct/100):427.26,
+        change:ss.change==null?_t('Your first score. It updates as you act.'):ss.change>0?_t('+{0} since last week').replace('{0}',ss.change):ss.change<0?_t('{0} since last week').replace('{0}',ss.change):_t('Same as last week'),
+        changeC:ss.change>0?'var(--gt)':ss.change<0?'var(--rt)':'var(--muted)',
+        parts:ss.parts.map(pp=>({label:pp.label,pct:pp.pct,weight:pp.weight,meta:_t('{0}% · weight {1}%').replace('{0}',pp.pct).replace('{1}',pp.weight),w:(s.ringOn?pp.pct:0)+'%',c:PART_C[pp.key]||'var(--p)'})),
+        boosters:ss.boosters.map(b=>({icon:b.icon,title:b.title,points:b.points,pts:_t('up to +{0}').replace('{0}',b.points),onClick:()=>this.boost(b)})),noBoost:!ss.boosters.length}
+      :{value:'…',band:'…',bg:'var(--soft)',fg:'var(--muted)',c:'var(--soft)',off:427.26,change:'',changeC:'var(--muted)',parts:[],boosters:[],noBoost:false};
+    const gdays=dg?dg.days:[];
+    const goalsV=(dg?dg.goals:[]).map(g=>({key:g.key,icon:g.icon,title:g.title,detail:g.detail,c:g.done?'var(--g)':'var(--p)',check:g.done?'check_circle':'radio_button_unchecked',checkC:g.done?'var(--g)':'var(--off)',
+      bg:g.done?'var(--gs)':'var(--bg)',border:g.done?'1.5px solid var(--g)':'1px solid var(--line)',
+      week:g.week.map((on,i)=>({d:String(_t(gdays[i]||'')).slice(0,2),bg:on?'var(--g)':'transparent',bd:on?'var(--g)':'var(--off)'})),
+      onClick:()=>g.key==='drill'?this.jump('drill-card'):this.go(g.page)}));
+    const dItems=dr?dr.items:[],dLast=s.drillLast,dLastItem=dLast&&dItems.find(i=>i.id===dLast.id),dPending=dItems.find(i=>!i.answered),dShow=!!(dLast&&dLastItem);
+    const drillSegs=(text,marks)=>{const out=[],plain=t=>({text:t,bg:'transparent',line:'none',pad:'0',weight:400});let pos=0;
+      (marks||[]).slice().sort((a,b)=>a.start-b.start).forEach(m=>{if(m.start<pos)return;if(m.start>pos)out.push(plain(text.slice(pos,m.start)));out.push({text:text.slice(m.start,m.end),bg:'var(--rs)',line:'2px solid var(--r)',pad:'1px 3px',weight:650});pos=m.end;});
+      if(pos<text.length)out.push(plain(text.slice(pos)));return out;};
+    const drillV={dots:dItems.map(i=>({bg:!i.answered?'var(--soft)':i.correct?'var(--g)':'var(--r)'})),
+      ask:!dShow&&!!dPending,show:dShow,finished:!dShow&&!dPending&&dItems.length>0,num:dPending?String(dItems.indexOf(dPending)+1):'',numLabel:dPending?_t('Message {0} of 3').replace('{0}',dItems.indexOf(dPending)+1):'',text:dPending?dPending.text:'',op:s.drillBusy?.6:1,
+      onScam:()=>dPending&&this.drillAnswer(dPending.id,'scam'),onGenuine:()=>dPending&&this.drillAnswer(dPending.id,'genuine'),
+      resBg:dLast&&dLast.correct?'var(--gs)':'var(--rs)',resFg:dLast&&dLast.correct?'var(--gt)':'var(--rt)',resIcon:dLast&&dLast.correct?'check_circle':'cancel',
+      resTitle:dLast?(dLast.correct?_t('Correct! Well spotted.'):_t('Not quite. Here is why.')):'',segs:dLastItem?drillSegs(dLastItem.text,dLast.marks):[],
+      labelText:dLast?(dLast.label==='scam'?_t('This is a scam.'):_t('This is a genuine message.')):'',tip:dLast?dLast.tip:'',
+      hasSignals:!!(dLast&&dLast.signals&&dLast.signals.length),signals:dLast?dLast.signals:[],
+      nextLabel:dPending?_t('Next message'):_t("See today's result"),onNext:()=>this.setState({drillLast:null}),
+      score:dr?`${dr.correct_today}/3`:'',acc:dr&&dr.accuracy_30d!=null?Math.round(dr.accuracy_30d)+'%':'–',streak:dr?String(dr.streak_days):'0',
+      review:dItems.filter(i=>i.answered).map(i=>({text:i.text,icon:i.correct?'check_circle':'cancel',c:i.correct?'var(--g)':'var(--r)',label:(i.label==='scam'?_t('Scam'):_t('Genuine'))+' · '+(i.correct?_t('you got it right'):_t('you missed this one'))}))};
+    const shieldV=shl.map(x=>{const open=s.shieldOpen===x.key;return {key:x.key,icon:x.icon,title:x.title,why:x.why,how:x.how,link:x.link&&!x.link.startsWith('tel:')?x.link:'',open,chev:open?'expand_less':'expand_more',
+      bg:x.done?'var(--gs)':'var(--bg)',c:x.done?'var(--g)':'var(--p)',canTick:!x.auto,isAuto:!!x.auto,
+      btnBg:x.done?'var(--card)':'var(--g)',btnFg:x.done?'var(--gt)':'#fff',btnBd:x.done?'1px solid var(--g)':'none',btnIcon:x.done?'check_circle':'task_alt',btnLabel:x.done?_t('Done'):_t('Mark done'),
+      autoBg:x.done?'var(--gs)':'var(--soft)',autoFg:x.done?'var(--gt)':'var(--muted)',autoLabel:x.done?_t('Done automatically'):_t('Add a contact to finish'),
+      onToggleOpen:()=>set('shieldOpen',open?null:x.key),onTick:()=>this.setShield(x.key,!x.done)};});
+    const shDone=shl.filter(x=>x.done).length;
+    const wcV=wch?{xp:wch.xp,head:_t('Weekly challenge · +{0} XP').replace('{0}',wch.xp),left:wch.days_left===0?_t('Last day'):wch.days_left===1?_t('1 day left'):_t('{0} days left').replace('{0}',wch.days_left),icon:wch.icon,title:wch.title,detail:wch.detail,open:!wch.done,done:wch.done,onDone:()=>this.doChallenge()}
+      :{xp:40,head:'',left:'',icon:'flag',title:'',detail:'',open:false,done:false,onDone:()=>{}};
     return {
+      isSeniorUser,elderTitle:isSeniorUser?'Senior Safety':'Family Safety',elderSub:isSeniorUser?'Simple tools to keep you and your savings safe.':'Protect your parents and grandparents: trusted contacts, one-tap help and the latest scam warnings.',
+      socModes:[['link','link','Check a link','mode-link'],['text','edit_note','Paste text instead','mode-text']].map(([k,icon,label,tid])=>({icon,label,tid,bg:s.socMode===k?'var(--p)':'var(--card)',fg:s.socMode===k?'#fff':'var(--text)',onClick:()=>set('socMode',k)})),
+      socModeLink:s.socMode==='link',socModeText:s.socMode==='text',
+      linkUrl:s.linkUrl,onLinkUrl:e=>set('linkUrl',e.target.value),onLinkKey:e=>{if(e.key==='Enter')this.checkLink(e.target.value);},
+      pasteLink:async()=>{const t=await this.readClipboard();if(t){const v=t.trim();this.setState({linkUrl:v});this.checkLink(v);}else if(t==='')this.toastMsg(_t('Clipboard is empty.'));},
+      checkLink:()=>this.checkLink(),linkPlat,linkPlatforms,linkHow:LINK_HOW,linkSteps,linkIdle:s.linkStatus==='idle',linkLoading:s.linkStatus==='loading',linkDone:s.linkStatus==='done'&&!!linkR,linkR:linkR||{},linkSegs,
+      linkToText:()=>{const pl=s.linkRes&&s.linkRes.platform;this.setState({socMode:'text',socText:'',socStatus:'idle',socRes:null,socSource:{instagram:'Instagram caption',youtube:'YouTube transcript',telegram:'Telegram message',x:'Twitter post'}[pl]||s.socSource});},
+      msgPaste:async()=>{const t=await this.readClipboard();if(t!==null)this.smartScan(t);},
+      msgPickShot:()=>this.msgFileRef.current&&this.msgFileRef.current.click(),msgFileRef:this.msgFileRef,onMsgShot:e=>{const f=e.target.files[0];e.target.value='';this.scanMsgImage(f);},
+      msgDictate:()=>this.dictateMsg(),msgMicBg:s.msgMic?'var(--r)':'var(--card)',msgMicFg:s.msgMic?'#fff':'var(--text)',msgMicIcon:s.msgMic?'stop_circle':'mic',msgMicLabel:s.msgMic?'Stop':'Speak it',
+      msgDragOver:e=>{e.preventDefault();if(!s.msgDrag)set('msgDrag',true);},msgDragLeave:()=>set('msgDrag',false),
+      msgDrop:e=>{e.preventDefault();this.setState({msgDrag:false});const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f)this.scanMsgImage(f);else{const t=e.dataTransfer.getData('text');if(t)this.smartScan(t);}},
+      msgDropOutline:s.msgDrag?'2px dashed var(--p)':'none',msgShotName:s.msgShotName,msgShotLabel:_t('Read from screenshot: {0}').replace('{0}',s.msgShotName||''),
+      onMsgPaste:e=>{const cd=e.clipboardData;if(!cd)return;const img=Array.from(cd.files||[]).find(f=>/^image\//.test(f.type));if(img){e.preventDefault();return this.scanMsgImage(img);}
+        const t=cd.getData('text'),cur=(s.msgText||'').trim();if(t&&t.trim().length>=12&&(!cur||cur===MSG_SAMPLE.trim())){e.preventDefault();this.smartScan(t);}},
+      score:safetyV,goals:goalsV,goalsDone:dg?`${dg.completed}/${dg.total} ${_t('done')}`:'0/3',drillStreak:_t('{0}-day streak').replace('{0}',dr?dr.streak_days:0),drill:drillV,shield:shieldV,
+      shieldDone:`${shDone}/${shl.length||10}`,shieldW:(shl.length?Math.round(100*shDone/shl.length):0)+'%',wc:wcV,
       ...storyV,officialVideos:OFFICIAL,
       isWide:s.w>=1180,theme:s.contrast?'contrast':s.dark?'dark':'light',zoom:s.senior?(prefs.text_scale||1.16):1,isMobile:mob,isDesktop:!mob,darkIcon:s.dark?'light_mode':'dark_mode',
       toggleDark:()=>{set('dark',!s.dark);if(s.user&&!s.contrast)this.savePrefs({theme:s.dark?'light':'dark'});},confettiEl:this.confettiEl(),langs:LANGS,langOpts:LANGS.map(l=>({v:l,n:NATIVE[l]})),
@@ -1726,7 +2057,7 @@ class Component extends DCLogic {
       toLanding:()=>this.route('landing'),toLogin:()=>this.setState({route:LS.get('sk_access')&&s.user?'app':'auth',authMode:'login'}),toSignup:()=>this.setState({route:'auth',authMode:'signup'}),
       toAppMsg:()=>s.user?this.go('msg'):this.setState({route:'auth',authMode:'signup'}),navFeatures:()=>this.jump('lp-features'),navHow:()=>this.jump('lp-how'),navStories:()=>this.jump('lp-stories'),openDemo:()=>this.openStory('how'),footHow:e=>{e&&e.preventDefault&&e.preventDefault();this.jump('lp-how');},footStories:e=>{e&&e.preventDefault&&e.preventDefault();this.openStory('apps');},
       heroScan:React.createElement('span',{style:{position:'absolute',top:0,bottom:0,width:'35%',borderRadius:99,background:'linear-gradient(90deg,transparent,#5B6CFF,transparent)',animation:'sk-scan 1.8s ease-in-out infinite'}}),
-      features:[{t:'Scam Detector',i:'gpp_maybe',c:'r',d:'Upload screenshots, PDFs or text. Get a risk score and the exact red flags.',to:'scam'},{t:'WhatsApp Analyzer',i:'chat',c:'g',d:'Paste a forwarded tip or “guaranteed return” offer and see how it tries to pressure you.',to:'msg'},{t:'Social Media Risk Scanner',i:'campaign',c:'v',d:'Check YouTube transcripts, Telegram posts and Instagram captions for FOMO and false promises.',to:'social'},{t:'Financial Habit Coach',i:'savings',c:'a',d:'Build an emergency fund and safer money habits with weekly goals and badges.',to:'habits'},{t:'Voice Assistant',i:'mic',c:'p',d:'Ask in Hindi or English, and hear the answer read aloud.',to:'voice'},{t:'Elderly Protection Tools',i:'elderly',c:'g',d:'Large text, high contrast, trusted family contacts and a one-tap help button.',to:'elder'}].map(f=>({title:f.t,icon:f.i,desc:f.d,bg:TONE[f.c].bg,fg:TONE[f.c].fg,onClick:()=>s.user?this.go(f.to):this.setState({route:'auth',authMode:'signup'})})),
+      features:[{t:'Scam Detector',i:'gpp_maybe',c:'r',d:'Upload screenshots, PDFs or text. Get a risk score and the exact red flags.',to:'scam'},{t:'WhatsApp Analyzer',i:'chat',c:'g',d:'Paste in one tap, drop a screenshot or just say the message, and see how it tries to pressure you.',to:'msg'},{t:'Link Checker',i:'travel_explore',c:'v',d:'Paste an Instagram reel, YouTube video, Telegram channel or X post link. We read it, fact-check its claims and explain the verdict.',to:'social'},{t:'Safety Habits & Score',i:'verified_user',c:'a',d:'A 2-minute daily Scam Drill, a Safety Shield checklist and a 300-900 Safety Score that rises with every safe action.',to:'habits'},{t:'Voice Assistant',i:'mic',c:'p',d:'Ask in Hindi or English, and hear the answer read aloud.',to:'voice'},{t:'Elderly Protection Tools',i:'elderly',c:'g',d:'Large text, high contrast, trusted family contacts and a one-tap help button.',to:'elder'}].map(f=>({title:f.t,icon:f.i,desc:f.d,bg:TONE[f.c].bg,fg:TONE[f.c].fg,onClick:()=>s.user?this.go(f.to):this.setState({route:'auth',authMode:'signup'})})),
       steps:[{n:'01',icon:'upload_file',title:'Upload',desc:'Share a message, screenshot, PDF or link.'},{n:'02',icon:'auto_awesome',title:'AI Analysis',desc:'Language, claims and sources are checked against known scam patterns.'},{n:'03',icon:'speed',title:'Risk Report',desc:'A score from Safe to Dangerous, with every reason explained.'},{n:'04',icon:'verified_user',title:'Safety Recommendation',desc:'Clear next steps to stay safe. Never investment advice.'}],
       testimonials:[{quote:'My father got a “double your money in 30 days” message on WhatsApp. Suraksha flagged it in seconds and explained why, in Hindi.',name:'Ankit Sharma',role:'Software engineer, Jaipur',initials:'AS',tag:'Ponzi pattern caught'},{quote:'I was about to join a Telegram “VIP tips” group. The scanner showed me every pressure tactic they were using on me.',name:'Meera Iyer',role:'Student, Chennai',initials:'MI',tag:'FOMO tactics flagged'},{quote:'Large text and the one-tap help button mean I can check messages on my own, and my son is alerted if I need him.',name:'Rajendra Patil',role:'Retired teacher, Pune',initials:'RP',tag:'Senior mode user'}],
       // auth
@@ -1756,9 +2087,9 @@ class Component extends DCLogic {
       signupCta:s.authBusy?'Please wait…':s.suMethod==='phone'?(s.otpSent?'Verify & create account':'Send OTP'):'Create account',
       signupSubmit:()=>{if(!s.authBusy)this.signup();},profileSubmit:()=>this.saveProfile(),
       // shell
-      nav:NAV.map(n=>({...n,onClick:()=>this.go(n.id),bg:page===n.id?'var(--ps)':'transparent',fg:page===n.id?'var(--pt)':'var(--muted)',weight:page===n.id?650:500,badge:n.id==='alerts'&&unread?String(unread):''})),
+      nav:NAV.map(n=>n.id==='elder'&&!isSeniorUser?{...n,label:'Family Safety',icon:'diversity_3'}:n).map(n=>({...n,onClick:()=>this.go(n.id),bg:page===n.id?'var(--ps)':'transparent',fg:page===n.id?'var(--pt)':'var(--muted)',weight:page===n.id?650:500,badge:n.id==='alerts'&&unread?String(unread):''})),
       mnav:MNAV.map(n=>({...n,onClick:()=>this.go(n.id),bg:page===n.id?'var(--ps)':'transparent',fg:page===n.id?'var(--pt)':'var(--muted)',badge:n.id==='alerts'&&unread?String(unread):''})),
-      pageTitle:(NAV.find(n=>n.id===page)||{}).label,uiLang:s.uiLang,onUiLang:e=>this.setLang(e.target.value),
+      pageTitle:page==='elder'&&!isSeniorUser?'Family Safety':(NAV.find(n=>n.id===page)||{}).label,uiLang:s.uiLang,onUiLang:e=>this.setLang(e.target.value),
       seniorTog:this.tog(s.senior,()=>{set('senior',!s.senior);this.savePrefs({elder_mode:!s.senior});}),unread:unread>0,notifOpen:s.notifOpen,toggleNotif:()=>set('notifOpen',!s.notifOpen),
       notifPreview:alerts.slice(0,4).map(a=>({...a,...TONE[a.tone],onClick:()=>this.go(a.to)})),markAllRead:()=>{api.post('/alerts/read-all').catch(()=>{});this.setState(x=>({alerts:x.alerts.map(a=>({...a,unread:false}))}));},
       goAlerts:()=>this.go('alerts'),goSettings:()=>this.go('settings'),goMsg:()=>this.go('msg'),goScam:()=>this.go('scam'),goLearn:()=>this.go('learn'),goVoice:()=>this.go('voice'),goHabits:()=>this.go('habits'),goElder:()=>this.go('elder'),goSocial:()=>this.go('social'),
@@ -1790,8 +2121,8 @@ class Component extends DCLogic {
       canAnalyze:!!(s.scamText.trim()||s.scamFile),analyzeOp:(s.scamText.trim()||s.scamFile)?1:.5,
       scamRight:()=>this.feedback(s.scamRes,'scam'),scamWrong:()=>this.feedback(s.scamRes,s.scamRes&&s.scamRes.score>=25?'not_scam':'scam'),
       // message scanner
-      msgText:s.msgText,onMsgText:e=>set('msgText',e.target.value),scanMsg:()=>this.analyze('msg',s.msgText,'WhatsApp/SMS message'),msgIdle:s.msgStatus==='idle',msgLoading:s.msgStatus==='loading',msgDone:s.msgStatus==='done',msgR,
-      clearMsg:()=>this.setState({msgText:'',msgStatus:'idle',msgRes:null}),pasteSample:()=>this.setState({msgText:MSG_SAMPLE}),msgChars:s.msgText.length,
+      msgText:s.msgText,onMsgText:e=>set('msgText',e.target.value),scanMsg:()=>this.smartScan(s.msgText),msgIdle:s.msgStatus==='idle',msgLoading:s.msgStatus==='loading',msgDone:s.msgStatus==='done',msgR,
+      clearMsg:()=>this.setState({msgText:'',msgStatus:'idle',msgRes:null,msgShotName:''}),pasteSample:()=>this.setState({msgText:MSG_SAMPLE}),msgChars:s.msgText.length,
       // social
       socSources:['YouTube transcript','Telegram message','Instagram caption','Twitter post'].map((x,i)=>({label:x,icon:['smart_display','send','photo_camera','tag'][i],bg:s.socSource===x?'var(--text)':'var(--card)',fg:s.socSource===x?'var(--bg)':'var(--text)',onClick:()=>set('socSource',x)})),
       socText:s.socText,onSocText:e=>this.setState({socText:e.target.value,socStatus:'idle',socRes:null}),scanSoc:()=>this.analyze('soc',s.socText,s.socSource),socIdle:s.socStatus==='idle',socNotDone:s.socStatus!=='done',editSoc:()=>this.setState({socStatus:'idle',socRes:null,socActive:null}),socLoading:s.socStatus==='loading',socDone:s.socStatus==='done',socR,segs,tacticCounts,act,hasAct:!!act,clearAct:()=>set('socActive',null),
@@ -1811,7 +2142,7 @@ class Component extends DCLogic {
       // learning
       modules,activeModuleTitle:course?course.title:'',
       videos:LESSON_STORIES.map(id=>{const st=STORIES[id];return {id,t:st.t,i:st.i,bg:TONE[st.c].bg,fg:TONE[st.c].c,d:st.slides.length+' slides · '+Math.max(1,Math.round(st.slides.reduce((n,x)=>n+x.t.length+x.x.length,0)/700))+' min',onClick:()=>this.openStory(id)};}),
-      flash:s.cards.map((f,i)=>({q:f.front,a:f.back,n:i+1,rot:s.flip[i]?'rotateY(180deg)':'none',onClick:()=>this.setState(x=>({flip:{...x.flip,[i]:!x.flip[i]}}))})),
+      flash:s.cards.map((f,i)=>({q:f.front,a:f.back,n:i+1,rot:s.flip[i]?'rotateY(180deg)':'none',onClick:()=>{this.setState(x=>({flip:{...x.flip,[i]:!x.flip[i]}}));this.practised();}})),
       quizQ:qz?qz.question:'No questions yet',quizOpts,quizNum:qs.length?`Question ${s.quizIdx%qs.length+1} of ${qs.length}`:'',quizChecked:s.quizChecked,quizCorrect,quizWrong:s.quizChecked&&!quizCorrect,quizExplain:qr?qr.explanation:'',
       quizXpText:qr&&qr.xp_awarded?`Correct! +${qr.xp_awarded} XP`:'Correct!',quizCanCheck:s.quizSel!==null,quizBtnOp:s.quizSel!==null?1:.5,
       quizBtn:s.quizChecked?'Next question':'Check answer',

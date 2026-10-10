@@ -30,6 +30,7 @@ SOURCE_NAMES = {
     "image": "screenshot",
     "pdf": "document",
     "social": "social media post",
+    "link": "shared link",
 }
 STEPS = [
     ("report_step_1930", {"tel": "tel:1930"}, ("low", "medium", "high", "critical")),

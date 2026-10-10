@@ -25,6 +25,7 @@ SOURCES = [
     ROOT / "backend/services/gamification_service.py",
     ROOT / "backend/services/readiness_service.py",
     ROOT / "backend/services/dashboard_service.py",
+    ROOT / "backend/services/safety_service.py",
 ]
 
 

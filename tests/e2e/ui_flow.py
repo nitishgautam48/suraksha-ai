@@ -5,7 +5,7 @@
 
 Flow: phone sign-up with privacy consent (OTP read from Mailpit, SMS_PROVIDER=email_bridge) -> dashboard ->
 message scan with confidence + report-to-1930 sheet -> trusted contact -> Get Help -> voice navigation ->
-family readiness -> habits / XP -> quiz check -> alerts -> Hindi interface. Fails on any JS error.
+family readiness -> safety habits (drill, shield, score) -> link checker -> quiz check -> alerts -> Hindi interface. Fails on any JS error.
 """
 
 import json
@@ -151,9 +151,27 @@ def main() -> int:
         pg.screenshot(path=f"{SHOTS}/4-readiness.png", full_page=True)
         print("PASS family readiness:", pg.inner_text("[data-testid=ready-score]") + "%")
 
-        pg.click("aside >> text=Habit Tracker")
+        pg.click("aside >> text=Safety Habits")
         pg.wait_for_selector("text=/Level \\d · /")
-        print("PASS habits:", pg.locator("text=/Level \\d · /").first.inner_text())
+        pg.wait_for_selector("[data-testid=safety-score-value]:not(:has-text('…'))")
+        before = int(pg.inner_text("[data-testid=safety-score-value]"))
+        for _ in range(3):  # daily scam drill: answer, read the explanation, next
+            pg.click("[data-testid=drill-scam]")
+            pg.wait_for_selector("[data-testid=drill-result]")
+            pg.click("[data-testid=drill-next]")
+        pg.wait_for_selector("[data-testid=drill-done]")
+        pg.locator("[data-testid=shield-btn]").first.click()
+        pg.wait_for_function(f"+document.querySelector('[data-testid=safety-score-value]').innerText > {before}")
+        pg.screenshot(path=f"{SHOTS}/5-safety-habits.png", full_page=True)
+        print("PASS safety habits: drill + shield, score", before, "->", pg.inner_text("[data-testid=safety-score-value]"))
+
+        pg.click("aside >> text=Link Checker")
+        pg.fill("[data-testid=link-input]", "http://127.0.0.1/admin")  # private address: never fetched (SSRF guard)
+        pg.click("[data-testid=link-check]")
+        pg.wait_for_selector("[data-testid=link-verdict]", timeout=30000)
+        assert "private network" in pg.inner_text("main")  # not opened, and the user is told why
+        assert pg.locator("[data-testid=link-checks]").count() == 1
+        print("PASS link checker refuses private addresses and explains why")
 
         pg.click("aside >> text=Learning Center")
         pg.wait_for_selector("text=/Question 1 of/")

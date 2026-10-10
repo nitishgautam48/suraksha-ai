@@ -284,7 +284,25 @@ def habits_overview(db: Session, user_id: uuid.UUID, use_ai: bool = False) -> di
             "sub": f"{quiz_passed} of {quiz_total} quizzes passed",
         },
     ]
+    from backend.services import safety_service
+
+    drill = safety_service.drill_state(db, user_id)
+    shield_items = safety_service.shield(db, user_id)
+    challenge = safety_service.weekly_challenge(db, user_id)
+    if not drill["done"]:
+        nudges.insert(0, "Today's Scam Drill takes 2 minutes. Spot the scams and keep your streak alive.")
+    next_step = next((s for s in shield_items if not s["done"]), None)
+    if next_step:
+        nudges.insert(1, f"Next Safety Shield step: {next_step['title']}.")
+    score = (
+        safety_service.safety_score(db, user, shield_items, drill, awareness, ef["pct"] if ef else ef_progress) if user else None
+    )
     return {
+        "safety_score": score,
+        "drill": drill,
+        "daily": safety_service.daily_goals(db, user_id, drill["done"]),
+        "shield": shield_items,
+        "weekly_challenge": challenge,
         "trackers": trackers,
         "emergency_fund": ef,
         "learning_streak_days": current,
@@ -295,5 +313,5 @@ def habits_overview(db: Session, user_id: uuid.UUID, use_ai: bool = False) -> di
         "savings_discipline": discipline,
         "savings_streak_weeks": sav_streak,
         "recent_savings": recent,
-        "nudges": nudges,
+        "nudges": nudges[:5],
     }

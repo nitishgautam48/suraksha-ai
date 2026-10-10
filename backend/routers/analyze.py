@@ -1,8 +1,9 @@
 """Module 2 (WhatsApp message analyzer) and Module 3 (social media analyzer)."""
 
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import select
 
 from backend.api.deps import DB, ConsentedUser, user_language
@@ -13,11 +14,15 @@ from backend.schemas.analysis import (
     AnalysisSummary,
     FeedbackOut,
     FeedbackRequest,
+    LinkAnalyzeRequest,
+    LinkAnalyzeResponse,
     MessageAnalyzeRequest,
     MessageAnalyzeResponse,
     SocialAnalyzeRequest,
     SocialAnalyzeResponse,
 )
+from backend.schemas.common import LanguageCode
+from backend.security.file_validation import read_and_validate
 from backend.security.rate_limit import limiter
 from backend.services import feedback_service, scan_service
 
@@ -36,12 +41,39 @@ def analyze_message(request: Request, data: MessageAnalyzeRequest, user: Consent
     }
 
 
+@router.post("/message-image", response_model=MessageAnalyzeResponse)
+@limiter.limit(settings.RATE_LIMIT_UPLOAD)
+async def analyze_message_image(
+    request: Request,
+    user: ConsentedUser,
+    db: DB,
+    file: Annotated[UploadFile, File(description="Screenshot of the WhatsApp / SMS chat")],
+    language: Annotated[LanguageCode | None, Form()] = None,
+):
+    """No copy-paste needed: upload a screenshot of the chat. The text is read (OCR) in memory, the
+    image is never stored, and the message is analysed like a pasted one."""
+    from starlette.concurrency import run_in_threadpool
+
+    vf = await read_and_validate(file, "image")
+    return await run_in_threadpool(scan_service.analyze_message_image, db, user.id, vf.data, user_language(user, language))
+
+
 @router.post("/social", response_model=SocialAnalyzeResponse)
 @limiter.limit(settings.RATE_LIMIT_AI)
 def analyze_social(request: Request, data: SocialAnalyzeRequest, user: ConsentedUser, db: DB):
     """Analyse an Instagram caption, Telegram message or YouTube transcript and return the
     risky sections highlighted (character offsets + ready-to-render segments)."""
     return scan_service.analyze_social_post(db, user.id, data.text, data.platform, user_language(user, data.language))
+
+
+@router.post("/link", response_model=LinkAnalyzeResponse)
+@limiter.limit(settings.RATE_LIMIT_AI)
+def analyze_link(request: Request, data: LinkAnalyzeRequest, user: ConsentedUser, db: DB):
+    """Paste a link to an Instagram reel, YouTube video, Telegram channel/post, X post or any web page.
+    Suraksha opens it, reads the caption, spoken words and page text, checks its claims (impossible
+    returns, SEBI registration, private-group funnels, payment requests) and returns a detailed,
+    reasoned verdict. Never logs in to any platform."""
+    return scan_service.analyze_link_url(db, user.id, data.url, user_language(user, data.language))
 
 
 @router.get("/history", response_model=list[AnalysisSummary])

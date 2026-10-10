@@ -27,6 +27,9 @@ requests==2.34.2
 httpx==0.28.1
 chromadb-client==1.5.9
 
+# ---- Link checker (reads Instagram / YouTube / X post text and subtitles; no login) ----
+yt-dlp==2026.8.19
+
 # ---- OCR ----
 pillow==12.3.0
 PyMuPDF==1.28.2

@@ -144,6 +144,13 @@ class Settings(BaseSettings):
     TESSERACT_CMD: str = "tesseract"
     OCR_LANGUAGES: str = "eng+hin"  # always loaded; the user's script is added per request
 
+    # --- Link checker (Instagram / YouTube / Telegram / X / any web page) ---
+    LINK_FETCH_TIMEOUT: float = 12.0
+    LINK_MAX_BYTES: int = 2_000_000
+    LINK_TRANSCRIBE: bool = True  # listen to short videos with Whisper when there are no subtitles
+    LINK_MAX_MEDIA_SECONDS: int = 240
+    LINK_USER_AGENT: str = "Mozilla/5.0 (compatible; SurakshaAI-LinkCheck/1.0; scam-safety check)"
+
     # --- Voice ---
     VOICE_ENABLED: bool = True
     WHISPER_MODEL: str = "base"

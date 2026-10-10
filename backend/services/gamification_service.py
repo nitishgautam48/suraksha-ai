@@ -61,6 +61,10 @@ XP_RULES: dict[str, tuple[int, int | None]] = {
     "verify_phone": (50, None),
     "report": (20, None),  # opened the report-to-1930 flow for a risky result
     "readiness_item": (15, None),  # nominee / family-readiness checklist item reviewed
+    "drill": (10, None),  # ref = date:item; xp 0 records a wrong answer
+    "drill_day": (25, None),  # all of today's drill answered; ref = date
+    "shield_step": (40, None),  # Safety Shield step completed; ref = step key
+    "weekly_challenge": (40, None),  # ref = ISO week
     "badge": (0, None),  # xp set per achievement
 }
 
@@ -80,6 +84,10 @@ ACTION_TITLES = {
     "verify_phone": ("verified", "g", "Verified phone"),
     "report": ("campaign", "r", "Reported a scam"),
     "readiness_item": ("family_restroom", "g", "Updated the family-readiness checklist"),
+    "drill": ("quiz", "p", "Spotted a scam in the daily drill"),
+    "drill_day": ("local_fire_department", "a", "Finished today's Scam Drill"),
+    "shield_step": ("shield", "g", "Completed a Safety Shield step"),
+    "weekly_challenge": ("flag", "a", "Completed the weekly safety challenge"),
     "badge": ("workspace_premium", "a", "Claimed a badge"),
 }
 
@@ -146,15 +154,37 @@ def _savings_streak(db, uid):
 
 
 def _checklist_done(db, uid):
-    from backend.services.habit_service import EMERGENCY_FUND_CHECKLIST
+    from backend.services.habit_service import CHECKLIST_KEYS, EMERGENCY_FUND_CHECKLIST
 
     done = _count(
         db,
         select(func.count())
         .select_from(HabitChecklistItem)
-        .where(HabitChecklistItem.user_id == uid, HabitChecklistItem.completed.is_(True)),
+        .where(
+            HabitChecklistItem.user_id == uid,
+            HabitChecklistItem.completed.is_(True),
+            HabitChecklistItem.item_key.in_(CHECKLIST_KEYS),
+        ),
     )
     return 1 if done >= len(EMERGENCY_FUND_CHECKLIST) else 0
+
+
+def _drill_correct(db, uid):
+    return _count(
+        db, select(func.count()).select_from(XPEvent).where(XPEvent.user_id == uid, XPEvent.action == "drill", XPEvent.xp > 0)
+    )
+
+
+def _drill_streak(db, uid):
+    from backend.services.activity_service import streaks
+
+    return max(streaks(db, uid, ("drill",)))
+
+
+def _shield_done(db, uid):
+    from backend.services.safety_service import SHIELD, shield
+
+    return 1 if sum(s["done"] for s in shield(db, uid)) >= len(SHIELD) else 0
 
 
 @dataclass(frozen=True)
@@ -221,6 +251,13 @@ ACHIEVEMENTS: tuple[Achievement, ...] = (
         50,
         lambda db, u: _count(db, select(func.count()).select_from(EmergencyContact).where(EmergencyContact.user_id == u)),
     ),
+    Achievement(
+        "sharp_eye", "Sharp Eye", "Spot 30 scams correctly in the daily drill", "visibility", "p", 30, 150, _drill_correct
+    ),
+    Achievement(
+        "drill_streak", "Drill Streak", "Do the Scam Drill 7 days in a row", "local_fire_department", "a", 7, 120, _drill_streak
+    ),
+    Achievement("fully_shielded", "Fully Shielded", "Complete every Safety Shield step", "shield", "g", 1, 250, _shield_done),
     Achievement(
         "helper",
         "Community Helper",
@@ -339,7 +376,9 @@ def achievements(db: Session, user_id: uuid.UUID) -> list[dict[str, Any]]:
 
 
 def overview(db: Session, user: User) -> dict[str, Any]:
-    recent = db.scalars(select(XPEvent).where(XPEvent.user_id == user.id).order_by(XPEvent.created_at.desc()).limit(10)).all()
+    recent = db.scalars(
+        select(XPEvent).where(XPEvent.user_id == user.id, XPEvent.xp > 0).order_by(XPEvent.created_at.desc()).limit(10)
+    ).all()
     return {
         **level_for(user.xp or 0),
         "achievements": achievements(db, user.id),
@@ -385,7 +424,7 @@ def recent_activity(db: Session, user_id: uuid.UUID, limit: int = 10) -> list[di
     items: list[dict[str, Any]] = []
     for e in db.scalars(
         select(XPEvent)
-        .where(XPEvent.user_id == user_id, XPEvent.action != "scan")
+        .where(XPEvent.user_id == user_id, XPEvent.action != "scan", XPEvent.xp > 0)
         .order_by(XPEvent.created_at.desc())
         .limit(limit)
     ).all():
@@ -401,7 +440,9 @@ def recent_activity(db: Session, user_id: uuid.UUID, limit: int = 10) -> list[di
             {
                 "icon": "gpp_bad" if tone == "r" else "gpp_maybe" if tone == "a" else "verified_user",
                 "tone": tone,
-                "title": f"Scanned a {a.platform or a.source_type} {'post' if a.source_type == 'social' else 'message'}",
+                "title": f"Checked a {a.platform or a.source_type} link"
+                if a.source_type == "link"
+                else f"Scanned a {a.platform or a.source_type} {'post' if a.source_type == 'social' else 'message'}",
                 "meta": f"{a.risk_level.title()} risk · {a.risk_score}/100",
                 "time": a.created_at,
             }

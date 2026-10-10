@@ -161,12 +161,18 @@ def complete_lesson(db: Session, user_id: uuid.UUID, lesson_id: uuid.UUID) -> Le
 
 
 def flashcards(db: Session, user_id: uuid.UUID, course_id: uuid.UUID) -> list[Flashcard]:
+    """Just reading the cards (the app pre-loads them) is not practice; see flashcards_practised."""
+    _course_or_404(db, course_id)
+    return list(db.scalars(select(Flashcard).where(Flashcard.course_id == course_id)).all())
+
+
+def flashcards_practised(db: Session, user_id: uuid.UUID, course_id: uuid.UUID) -> int:
+    """The user actually flipped cards: counts toward the learning streak and today's Learn goal."""
     _course_or_404(db, course_id)
     record_activity(db, user_id, "flashcards")
-    award(db, user_id, "flashcards", ref=f"{course_id}:{date.today().isoformat()}")
-    _daily(db, user_id)
+    xp = award(db, user_id, "flashcards", ref=f"{course_id}:{date.today().isoformat()}") + _daily(db, user_id)
     db.commit()
-    return list(db.scalars(select(Flashcard).where(Flashcard.course_id == course_id)).all())
+    return xp
 
 
 def assessment(db: Session, course_id: uuid.UUID, shuffle: bool = True) -> list[AssessmentQuestion]:

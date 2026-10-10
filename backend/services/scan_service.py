@@ -200,6 +200,56 @@ def analyze_social_post(db: Session, user_id: uuid.UUID, text: str, platform: st
     }
 
 
+def analyze_message_image(db: Session, user_id: uuid.UUID, data: bytes, language: str) -> dict:
+    """Screenshot of a chat -> OCR in memory -> message analysis. The image is never written to disk."""
+    try:
+        ocr = ocr_image(data, language)
+    except OCRUnavailable as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+    if len(ocr.text.strip()) < 4:
+        raise HTTPException(422, "No readable text was found in the screenshot")
+    analysis, result = analyze_text(db, user_id, ocr.text, language, "message")
+    return message_response(analysis, result, language) | {
+        "simple_verdict": simple_verdict(db, user_id, analysis.risk_level, language),
+        "extracted_text": result.cleaned_text[:5000],
+    }
+
+
+def analyze_link_url(db: Session, user_id: uuid.UUID, url: str, language: str) -> dict:
+    """Open a shared link (reel, video, channel, post, web page), read it and give a reasoned verdict."""
+    from backend.ai.link_analyzer import analyze_link
+    from backend.ai.link_fetcher import FetchError, fetch_link
+
+    try:
+        fetched = fetch_link(url, language)
+    except FetchError as exc:  # not a usable link at all (fetch problems are reported as limitations)
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    r = analyze_link(fetched, language)
+    reasons = [x["title"] for x in r["reasons"]][:8] or ["No scam signals found in what could be read."]
+    analysis = persist_analysis(
+        db,
+        user_id,
+        {**r, "reasons": reasons, "explanation": r["explanation"]},
+        "link",
+        f"{fetched.url}\n{r['cleaned_text']}",
+        platform=fetched.platform,
+    )
+    keys = (
+        "url", "final_url", "platform", "source", "fetched", "limitations", "verdict", "risk_score", "risk_level",
+        "tactics", "highlights", "segments", "reasons", "claims", "checks", "genuine_signals", "what_to_do",
+        "explanation", "safe_practices", "links",
+    )  # fmt: skip
+    return (
+        trust(r, language, "link")
+        | {k: r[k] for k in keys}
+        | {
+            "simple_verdict": simple_verdict(db, user_id, r["risk_level"], language),
+            "analysis_id": analysis.id,
+            "engine": _engine(r),
+        }
+    )
+
+
 def quick_preview(text: str, kind: str, platform: str, language: str) -> dict:
     """Instant rules-only result, shown while the AI review runs. Not stored, no XP, no alerts.
 

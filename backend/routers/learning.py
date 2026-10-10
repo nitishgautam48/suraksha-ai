@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, Request
 
 from backend.api.deps import DB, CurrentUser, require_permission
 from backend.config import settings
-from backend.schemas.common import LanguageCode
+from backend.schemas.common import LanguageCode, Message
 from backend.schemas.learning import (
     AnswerCheck,
     AssessmentOut,
@@ -63,6 +63,13 @@ def check_question(question_id: uuid.UUID, data: AnswerCheck, user: CurrentUser,
 @router.get("/courses/{course_id}/flashcards", response_model=list[FlashcardOut])
 def flashcards(course_id: uuid.UUID, user: CurrentUser, db: DB):
     return learning_service.flashcards(db, user.id, course_id)
+
+
+@router.post("/courses/{course_id}/flashcards/practised", response_model=Message)
+def flashcards_practised(course_id: uuid.UUID, user: CurrentUser, db: DB):
+    """Record that the user practised this course's flash cards today (learning streak, +XP once a day)."""
+    xp = learning_service.flashcards_practised(db, user.id, course_id)
+    return {"detail": f"Practice recorded (+{xp} XP)" if xp else "Practice recorded"}
 
 
 @router.get("/courses/{course_id}/assessment", response_model=AssessmentOut)
