@@ -1,13 +1,13 @@
 # ---- Web framework ----
-fastapi==0.142.2
+fastapi==0.143.1
 uvicorn[standard]==0.54.0
 python-multipart==0.0.32
-pydantic==2.13.5
-pydantic-settings==2.15.0
+pydantic==2.14.1
+pydantic-settings==2.16.0
 email-validator==2.3.0
 
 # ---- Database ----
-SQLAlchemy==2.1.1
+SQLAlchemy==2.1.4
 alembic==1.20.0
 psycopg[binary]==3.3.6
 
@@ -20,7 +20,7 @@ PyJWT==2.15.1
 bcrypt==5.0.0
 slowapi==0.1.10
 nh3==0.3.7
-google-auth==2.59.1
+google-auth==2.62.0
 requests==2.34.2
 
 # ---- AI runtime (Ollama over HTTP) / RAG ----
@@ -39,5 +39,5 @@ pytesseract==0.3.13
 prometheus-client==0.26.0
 
 # ---- Audio I/O (shared by voice extras) ----
-numpy==2.4.6
+numpy==2.5.4
 soundfile==0.14.0
