@@ -1,14 +1,14 @@
 # ---- Web framework ----
-fastapi==0.142.2
+fastapi==0.159.1
 uvicorn[standard]==0.54.0
 python-multipart==0.0.32
-pydantic==2.13.5
-pydantic-settings==2.15.0
+pydantic==2.14.1
+pydantic-settings==2.16.1
 email-validator==2.3.0
 
 # ---- Database ----
-SQLAlchemy==2.1.1
-alembic==1.20.0
+SQLAlchemy==2.1.6
+alembic==1.20.1
 psycopg[binary]==3.3.6
 
 # ---- Cache / queue ----
@@ -20,7 +20,7 @@ PyJWT==2.15.1
 bcrypt==5.0.0
 slowapi==0.1.10
 nh3==0.3.7
-google-auth==2.59.1
+google-auth==2.62.0
 requests==2.34.2
 
 # ---- AI runtime (Ollama over HTTP) / RAG ----
@@ -28,7 +28,7 @@ httpx==0.28.1
 chromadb-client==1.5.9
 
 # ---- Link checker (reads Instagram / YouTube / X post text and subtitles; no login) ----
-yt-dlp==2026.8.19
+yt-dlp==2026.10.21
 
 # ---- OCR ----
 pillow==12.3.0
@@ -39,5 +39,5 @@ pytesseract==0.3.13
 prometheus-client==0.26.0
 
 # ---- Audio I/O (shared by voice extras) ----
-numpy==2.4.6
+numpy==2.5.4
 soundfile==0.14.0
