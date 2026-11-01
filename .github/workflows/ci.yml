@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -38,7 +38,7 @@ jobs:
           PYTHONPATH=. python scripts/evaluate_risk.py --fail-under-f1 0.95
         env:
           DATABASE_URL: sqlite://
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: risk-report
           path: risk-report.json
@@ -60,8 +60,8 @@ jobs:
     env:
       DATABASE_URL: postgresql+psycopg://suraksha:suraksha@localhost:5432/suraksha
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -80,7 +80,7 @@ jobs:
     timeout-minutes: 40
     needs: [lint-test]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate compose files
         run: |
           docker compose config -q
@@ -115,7 +115,7 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
           SCREENSHOT_DIR=e2e-screenshots python tests/e2e/ui_flow.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: e2e-screenshots
@@ -141,8 +141,8 @@ jobs:
     timeout-minutes: 10
     continue-on-error: true  # advisory: new CVEs should not block unrelated changes
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - run: pip install pip-audit
