@@ -1,9 +1,9 @@
 # Local speech models. Installed into the image when INSTALL_VOICE=true (default).
 # torch / torchaudio 2.8.0 (CPU) are installed first in the Dockerfile; pinning them here stops pip
 # from upgrading them (PyTorch >= 2.9 makes Coqui TTS require torchcodec).
-torch==2.8.0
-torchaudio==2.8.0
+torch==2.15.0
+torchaudio==2.11.1
 openai-whisper==20250625
-coqui-tts==0.27.5
+coqui-tts==0.28.0
 # coqui-tts 0.27.x needs transformers >= 4.57 but breaks on 5.x (isin_mps_friendly was removed).
 transformers>=4.57,<5
