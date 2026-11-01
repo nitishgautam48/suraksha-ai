@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Build context: project root (docker compose sets this).
-FROM python:3.11-slim-bookworm
+FROM python:3.15-slim-bookworm
 
 ARG INSTALL_VOICE=true
 ENV PYTHONDONTWRITEBYTECODE=1 \
